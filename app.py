@@ -4946,7 +4946,7 @@ def get_groq_advice(prompt):
         response = requests.post(
             'https://api.groq.com/openai/v1/chat/completions',
             headers={
-                'Authorization': 'Bearer GROQ_API_KEY_REMOVED',
+                'Authorization': f'Bearer {os.environ.get("GROQ_API_KEY", "")}',
                 'Content-Type': 'application/json'
             },
             json={
@@ -4987,7 +4987,7 @@ def get_huggingface_advice(prompt):
         
         response = requests.post(
             'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium',
-            headers={'Authorization': 'Bearer HUGGINGFACE_API_KEY_REMOVED'},
+            headers={'Authorization': f'Bearer {os.environ.get("HUGGINGFACE_API_KEY", "")}'},
             json={'inputs': prompt[:500]},  # Limit length for this model
             timeout=15
         )
