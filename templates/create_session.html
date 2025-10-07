@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Create Session - Virtual Classroom{% endblock %}
+
+{% block head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+    [x-cloak] { display: none !important; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900" x-data="{ isLoading: false }" x-cloak>
+    <div class="max-w-2xl mx-auto px-6 py-12">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-video text-white text-2xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-white mb-2">Create Live Session</h1>
+            <p class="text-white/70">Set up a new virtual classroom session for your students</p>
+        </div>
+
+        <!-- Create Session Form -->
+        <div class="bg-white/95 backdrop-blur-lg rounded-2xl p-8 shadow-2xl">
+            <form id="createSessionForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Session Name *</label>
+                    <input type="text" name="session_name" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                           placeholder="Enter session name (e.g., Math Class - Chapter 5)">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea name="description" rows="3"
+                              class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                              placeholder="Brief description of the session content and objectives"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Session Type</label>
+                        <select name="session_type"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors">
+                            <option value="lecture">📚 Lecture</option>
+                            <option value="discussion">💬 Discussion</option>
+                            <option value="exam_review">📝 Exam Review</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Max Participants</label>
+                        <input type="number" name="max_participants" value="50" min="2" max="100"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors">
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <div class="flex items-start space-x-3">
+                        <input type="checkbox" name="password_protected" id="passwordProtected" 
+                               class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <div>
+                            <label for="passwordProtected" class="block text-sm font-medium text-gray-700">Password Protected Session</label>
+                            <p class="text-xs text-gray-500 mt-1">Require a password for students to join this session</p>
+                        </div>
+                    </div>
+                    
+                    <div x-show="document.getElementById('passwordProtected')?.checked" class="mt-4" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Session Password</label>
+                        <input type="text" name="session_password"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                               placeholder="Enter a secure password">
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4 pt-4">
+                    <button type="submit" :disabled="isLoading"
+                            class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 text-white py-3 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105"
+                            :class="{ 'cursor-not-allowed': isLoading }">
+                        <span x-show="!isLoading" class="flex items-center justify-center">
+                            <i class="fas fa-video mr-2"></i>Create & Start Session
+                        </span>
+                        <span x-show="isLoading" class="flex items-center justify-center">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Creating Session...
+                        </span>
+                    </button>
+                    
+                    <a href="{{ url_for('virtual_classroom') }}"
+                       class="px-6 py-3 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-xl font-medium transition-colors">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Session Tips -->
+        <div class="mt-8 bg-white/10 backdrop-blur-lg rounded-xl p-6">
+            <h3 class="text-white font-semibold mb-4 flex items-center">
+                <i class="fas fa-lightbulb mr-2 text-yellow-400"></i>
+                Session Tips
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-white/80">
+                <div class="flex items-start space-x-2">
+                    <i class="fas fa-check-circle text-green-400 mt-0.5"></i>
+                    <span>Test your camera and microphone before starting</span>
+                </div>
+                <div class="flex items-start space-x-2">
+                    <i class="fas fa-check-circle text-green-400 mt-0.5"></i>
+                    <span>Share the Room ID with your students</span>
+                </div>
+                <div class="flex items-start space-x-2">
+                    <i class="fas fa-check-circle text-green-400 mt-0.5"></i>
+                    <span>Use clear session names for easy identification</span>
+                </div>
+                <div class="flex items-start space-x-2">
+                    <i class="fas fa-check-circle text-green-400 mt-0.5"></i>
+                    <span>Monitor the chat for student questions</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('createSessionForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Get Alpine.js data
+    const alpineData = this.closest('[x-data]')._x_dataStack[0];
+    alpineData.isLoading = true;
+    
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetch('{{ url_for("create_session") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show success message briefly before redirect
+            const successMsg = document.createElement('div');
+            successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg z-50';
+            successMsg.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Session created! Room ID: ${data.room_id}</span>
+                </div>
+            `;
+            document.body.appendChild(successMsg);
+            
+            // Redirect after a short delay
+            setTimeout(() => {
+                window.location.href = data.redirect;
+            }, 1500);
+        } else {
+            throw new Error(data.error || 'Failed to create session');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        
+        // Show error message
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-xl shadow-lg z-50';
+        errorMsg.innerHTML = `
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Error: ${error.message}</span>
+            </div>
+        `;
+        document.body.appendChild(errorMsg);
+        
+        // Remove error message after 5 seconds
+        setTimeout(() => {
+            errorMsg.remove();
+        }, 5000);
+        
+        alpineData.isLoading = false;
+    }
+});
+
+// Toggle password field visibility
+document.getElementById('passwordProtected').addEventListener('change', function() {
+    const passwordField = this.closest('.bg-gray-50').querySelector('[x-show]');
+    if (passwordField) {
+        passwordField.style.display = this.checked ? 'block' : 'none';
+    }
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Exam Countdown - {{ exam.title }}{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>{{ exam.title }}</h1>
+        <p class="text-gray-600">Exam will be available soon</p>
+    </div>
+
+    <div class="countdown-container">
+        <div class="countdown-card">
+            <div class="countdown-header">
+                <h2>🕒 Exam Starts In</h2>
+                <p class="exam-schedule-info">
+                    <strong>Start:</strong> {{ scheduled_start.strftime('%B %d, %Y at %I:%M %p') }}<br>
+                    <strong>End:</strong> {{ scheduled_end.strftime('%B %d, %Y at %I:%M %p') }}
+                </p>
+            </div>
+            
+            <div class="countdown-display" id="countdown">
+                <div class="time-unit">
+                    <span class="time-value" id="days">0</span>
+                    <span class="time-label">Days</span>
+                </div>
+                <div class="time-separator">:</div>
+                <div class="time-unit">
+                    <span class="time-value" id="hours">0</span>
+                    <span class="time-label">Hours</span>
+                </div>
+                <div class="time-separator">:</div>
+                <div class="time-unit">
+                    <span class="time-value" id="minutes">0</span>
+                    <span class="time-label">Minutes</span>
+                </div>
+                <div class="time-separator">:</div>
+                <div class="time-unit">
+                    <span class="time-value" id="seconds">0</span>
+                    <span class="time-label">Seconds</span>
+                </div>
+            </div>
+            
+            <div class="countdown-message" id="countdown-message">
+                <p>📚 Use this time to prepare for your exam!</p>
+            </div>
+            
+            <div class="action-buttons">
+                <a href="{{ url_for('students_dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <button id="refresh-btn" class="btn btn-primary" onclick="location.reload()">
+                    <i class="fas fa-sync"></i> Refresh Page
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.countdown-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    padding: 2rem;
+}
+
+.countdown-card {
+    background: linear-gradient(135deg, var(--primary-50), var(--accent-50));
+    border-radius: 20px;
+    padding: 3rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 600px;
+    width: 100%;
+    border: 1px solid var(--primary-200);
+}
+
+.countdown-header h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-700);
+    margin-bottom: 1rem;
+}
+
+.exam-schedule-info {
+    background: var(--primary-100);
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    color: var(--primary-700);
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.countdown-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.time-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: white;
+    padding: 1.5rem 1rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    min-width: 80px;
+    border: 2px solid var(--primary-200);
+}
+
+.time-value {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--primary-600);
+    line-height: 1;
+    font-family: 'Inter', monospace;
+}
+
+.time-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary-500);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 0.5rem;
+}
+
+.time-separator {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-400);
+    margin: 0 0.5rem;
+}
+
+.countdown-message {
+    background: var(--success-100);
+    padding: 1rem;
+    border-radius: 10px;
+    margin: 2rem 0;
+    border-left: 4px solid var(--success-500);
+}
+
+.countdown-message p {
+    color: var(--success-700);
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+.exam-available {
+    background: var(--success-100) !important;
+    border-color: var(--success-500) !important;
+}
+
+.exam-available .countdown-message {
+    background: var(--success-200);
+}
+
+.exam-available .countdown-message p {
+    color: var(--success-800);
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .countdown-card {
+        padding: 2rem 1rem;
+        margin: 1rem;
+    }
+    
+    .countdown-display {
+        gap: 0.5rem;
+    }
+    
+    .time-unit {
+        padding: 1rem 0.5rem;
+        min-width: 60px;
+    }
+    
+    .time-value {
+        font-size: 2rem;
+    }
+    
+    .time-separator {
+        font-size: 1.5rem;
+        margin: 0 0.25rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+</style>
+
+<script>
+// Set the exam start time
+const examStartTime = new Date("{{ scheduled_start.isoformat() }}").getTime();
+
+function updateCountdown() {
+    const now = new Date().getTime();
+    const distance = examStartTime - now;
+
+    if (distance < 0) {
+        // Exam time has arrived
+        document.getElementById("countdown").innerHTML = 
+            '<div class="exam-ready">🎉 Exam is now available!</div>';
+        document.getElementById("countdown-message").innerHTML = 
+            '<p style="color: var(--success-700); font-weight: 700; font-size: 1.2rem;">✅ You can now take the exam. Click refresh to continue.</p>';
+        document.querySelector(".countdown-card").classList.add("exam-available");
+        
+        // Auto-refresh after 3 seconds
+        setTimeout(() => {
+            location.reload();
+        }, 3000);
+        
+        return;
+    }
+
+    // Calculate time units
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    // Update display
+    document.getElementById("days").textContent = days.toString().padStart(2, '0');
+    document.getElementById("hours").textContent = hours.toString().padStart(2, '0');
+    document.getElementById("minutes").textContent = minutes.toString().padStart(2, '0');
+    document.getElementById("seconds").textContent = seconds.toString().padStart(2, '0');
+    
+    // Update message based on time remaining
+    const messageEl = document.getElementById("countdown-message");
+    if (days > 0) {
+        messageEl.innerHTML = '<p>📚 The exam is scheduled for more than a day from now. Use this time to study well!</p>';
+    } else if (hours > 0) {
+        messageEl.innerHTML = '<p>⏰ Less than a day remaining! Make sure you\'re prepared.</p>';
+    } else if (minutes > 0) {
+        messageEl.innerHTML = '<p>🚀 Less than an hour left! Get ready to take your exam.</p>';
+    } else {
+        messageEl.innerHTML = '<p>⚡ Less than a minute remaining! The exam will be available very soon.</p>';
+    }
+}
+
+// Update countdown every second
+updateCountdown();
+setInterval(updateCountdown, 1000);
+
+// Add some visual feedback for refresh button
+document.getElementById("refresh-btn").addEventListener("click", function() {
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+});
+</script>
+{% endblock %}

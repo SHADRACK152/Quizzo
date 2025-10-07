@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}{{ challenge.title }} - QUIZZO{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">{{ challenge.title }}</h1>
+                <p class="text-gray-600">{{ challenge.description or 'Challenge in progress' }}</p>
+            </div>
+            <div class="text-right">
+                <div class="text-sm text-gray-500">Question {{ progress.current }} of {{ progress.total }}</div>
+                <div class="w-32 bg-gray-200 rounded-full h-2 mt-1">
+                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ progress.percentage }}%"></div>
+                </div>
+                {% if per_question_time %}
+                <div class="text-sm text-gray-500 mt-2">
+                    <i class="fas fa-clock mr-1"></i>
+                    <span id="time-display">{{ per_question_time }}s</span> remaining
+                </div>
+                <div class="w-32 bg-gray-200 rounded-full h-2 mt-1">
+                    <div id="countdown-bar" class="bg-red-500 h-2 rounded-full transition-all duration-1000" style="width: 100%"></div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Card -->
+    <div class="bg-white rounded-lg shadow-md p-8 mb-6">
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                Question {{ progress.current }}
+            </h2>
+            <p class="text-lg text-gray-700 leading-relaxed">{{ question.question_text }}</p>
+        </div>
+
+        <!-- Answer Form -->
+        <form id="answer-form" method="POST" action="{{ url_for('submit_challenge_answer', session_id=session.id) }}">
+            <input type="hidden" name="question_id" value="{{ question.id }}">
+            
+            {% if question.question_type == 'multiple_choice' %}
+                <div class="space-y-3">
+                    {% for option in [question.option_a, question.option_b, question.option_c, question.option_d] %}
+                        {% if option %}
+                        <label class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition duration-200">
+                            <input type="radio" name="answer" value="{{ option }}" class="mr-3 text-blue-600" required>
+                            <span class="text-gray-700">{{ option }}</span>
+                        </label>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% elif question.question_type == 'true_false' %}
+                <div class="space-y-3">
+                    <label class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition duration-200">
+                        <input type="radio" name="answer" value="True" class="mr-3 text-blue-600" required>
+                        <span class="text-gray-700">True</span>
+                    </label>
+                    <label class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition duration-200">
+                        <input type="radio" name="answer" value="False" class="mr-3 text-blue-600" required>
+                        <span class="text-gray-700">False</span>
+                    </label>
+                </div>
+            {% endif %}
+
+            <!-- Submit Button -->
+            <div class="mt-8 flex justify-between items-center">
+                <a href="{{ url_for('student_challenges') }}" class="text-gray-600 hover:text-gray-800">
+                    ← Back to Challenges
+                </a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition duration-200">
+                    {% if progress.current == progress.total %}
+                        Finish Challenge
+                    {% else %}
+                        Next Question
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Challenge Info -->
+    <div class="bg-gray-50 rounded-lg p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+            <div>
+                <div class="text-2xl font-bold text-gray-800">{{ progress.total }}</div>
+                <div class="text-sm text-gray-600">Total Questions</div>
+            </div>
+            <div>
+                <div class="text-2xl font-bold text-blue-600">{{ progress.current - 1 }}</div>
+                <div class="text-sm text-gray-600">Answered</div>
+            </div>
+            <div>
+                <div class="text-2xl font-bold text-green-600">{{ progress.total - progress.current + 1 }}</div>
+                <div class="text-sm text-gray-600">Remaining</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-save progress periodically
+    let saveTimer;
+    
+    // Countdown timer variables
+    let countdownTimer;
+    let timeRemaining = {{ per_question_time or 0 }};
+    const totalTime = {{ per_question_time or 0 }};
+    let isTimerActive = {{ 'true' if per_question_time else 'false' }};
+    
+    function saveProgress() {
+        // This could save the current state to prevent data loss
+        console.log('Progress saved');
+    }
+    
+    function updateCountdown() {
+        if (!isTimerActive || timeRemaining <= 0) return;
+        
+        // Update time display
+        const timeDisplay = document.getElementById('time-display');
+        const countdownBar = document.getElementById('countdown-bar');
+        const questionCard = document.querySelector('.bg-white.rounded-lg.shadow-md');
+        
+        if (timeDisplay) {
+            timeDisplay.textContent = timeRemaining + 's';
+            
+            // Add urgency styling when time is running low
+            if (timeRemaining <= 10) {
+                timeDisplay.className = 'text-red-600 font-bold animate-pulse';
+            } else if (timeRemaining <= 20) {
+                timeDisplay.className = 'text-yellow-600 font-semibold';
+            }
+        }
+        
+        if (countdownBar) {
+            const percentage = (timeRemaining / totalTime) * 100;
+            countdownBar.style.width = percentage + '%';
+            
+            // Change color as time runs out
+            if (percentage <= 20) {
+                countdownBar.className = 'bg-red-600 h-2 rounded-full transition-all duration-1000';
+                // Add red border to question card
+                if (questionCard) {
+                    questionCard.style.borderLeft = '4px solid #dc2626';
+                }
+            } else if (percentage <= 50) {
+                countdownBar.className = 'bg-yellow-500 h-2 rounded-full transition-all duration-1000';
+                // Add yellow border to question card
+                if (questionCard) {
+                    questionCard.style.borderLeft = '4px solid #eab308';
+                }
+            }
+        }
+        
+        // Show warning at 10 seconds
+        if (timeRemaining === 10) {
+            showTimeWarning();
+        }
+        
+        timeRemaining--;
+        
+        // Auto-submit when time expires
+        if (timeRemaining < 0) {
+            clearInterval(countdownTimer);
+            autoSubmitAnswer();
+        }
+    }
+    
+    function showTimeWarning() {
+        // Create a temporary warning message
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-bounce';
+        warningDiv.innerHTML = '<i class="fas fa-clock mr-2"></i>10 seconds remaining!';
+        document.body.appendChild(warningDiv);
+        
+        // Remove warning after 3 seconds
+        setTimeout(() => {
+            if (warningDiv.parentNode) {
+                warningDiv.parentNode.removeChild(warningDiv);
+            }
+        }, 3000);
+    }
+    
+    function autoSubmitAnswer() {
+        // Get the selected answer if any
+        const form = document.getElementById('answer-form');
+        const selectedAnswer = form.querySelector('input[name="answer"]:checked');
+        
+        // Create a hidden input to indicate auto-submission
+        const autoSubmitInput = document.createElement('input');
+        autoSubmitInput.type = 'hidden';
+        autoSubmitInput.name = 'auto_submit';
+        autoSubmitInput.value = 'true';
+        form.appendChild(autoSubmitInput);
+        
+        // Show warning message
+        if (selectedAnswer) {
+            console.log('Time expired! Submitting selected answer:', selectedAnswer.value);
+        } else {
+            console.log('Time expired! No answer selected, submitting blank.');
+        }
+        
+        // Submit the form
+        form.submit();
+    }
+    
+    function startCountdown() {
+        if (isTimerActive && timeRemaining > 0) {
+            countdownTimer = setInterval(updateCountdown, 1000);
+            
+            // Show initial countdown
+            updateCountdown();
+        }
+    }
+    
+    // Start countdown when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        startCountdown();
+    });
+    
+    // Stop countdown when form is submitted manually
+    document.getElementById('answer-form').addEventListener('submit', function() {
+        if (countdownTimer) {
+            clearInterval(countdownTimer);
+        }
+    });
+    
+    // Save progress every 30 seconds
+    saveTimer = setInterval(saveProgress, 30000);
+    
+    // Save progress when page is about to unload
+    window.addEventListener('beforeunload', function(e) {
+        clearInterval(saveTimer);
+        if (countdownTimer) {
+            clearInterval(countdownTimer);
+        }
+        saveProgress();
+    });
+</script>
+
+{% endblock %}

@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - QUIZZO{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 flex items-center justify-center p-4">
+    <!-- Background Elements -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-primary-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 floating-element"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-accent-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 floating-element" style="animation-delay: 2s;"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-success-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 floating-element" style="animation-delay: 4s;"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="relative w-full max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 items-center">
+        
+        <!-- Left Side - Branding & Info -->
+        <div class="hidden lg:block space-y-8 animate-fade-in">
+            <!-- Logo & Brand -->
+            <div class="text-center lg:text-left">
+                <div class="inline-flex items-center space-x-4 mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-r from-primary-500 to-accent-500 rounded-2xl flex items-center justify-center shadow-xl">
+                        <i class="fas fa-graduation-cap text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-bold gradient-text font-display">QUIZZO</h1>
+                        <p class="text-secondary-500 font-medium">Next-Gen Assessment Platform</p>
+                    </div>
+                </div>
+                
+                <h2 class="text-3xl lg:text-4xl font-bold text-secondary-900 mb-4 leading-tight">
+                    Transform Your <span class="gradient-text">Educational</span> Assessment Experience
+                </h2>
+                <p class="text-lg text-secondary-600 mb-8 leading-relaxed">
+                    Join thousands of educators and students using our AI-powered examination platform 
+                    for secure, reliable, and intelligent assessment solutions.
+                </p>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="flex items-center space-x-3 p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 hover-lift">
+                    <div class="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-primary-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-secondary-900">AI Proctoring</h3>
+                        <p class="text-sm text-secondary-600">Advanced security</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 hover-lift">
+                    <div class="w-10 h-10 bg-success-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-chart-line text-success-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-secondary-900">Analytics</h3>
+                        <p class="text-sm text-secondary-600">Real-time insights</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 hover-lift">
+                    <div class="w-10 h-10 bg-accent-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-users text-accent-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-secondary-900">Collaborative</h3>
+                        <p class="text-sm text-secondary-600">Team management</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 hover-lift">
+                    <div class="w-10 h-10 bg-warning-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-clock text-warning-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-secondary-900">24/7 Support</h3>
+                        <p class="text-sm text-secondary-600">Always available</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trust Indicators -->
+            <div class="bg-white/50 backdrop-blur-sm rounded-2xl p-6 border border-white/50">
+                <p class="text-center text-secondary-600 font-medium mb-4">Trusted by leading institutions</p>
+                <div class="flex justify-center items-center space-x-8 opacity-60">
+                    <div class="text-2xl font-bold text-secondary-400">EDU+</div>
+                    <div class="text-2xl font-bold text-secondary-400">LEARN</div>
+                    <div class="text-2xl font-bold text-secondary-400">ACADEMY</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side - Login Form -->
+        <div class="w-full max-w-md mx-auto lg:mx-0 animate-slide-up">
+            <!-- Form Container -->
+            <div class="modern-card bg-white/80 backdrop-blur-xl border-white/50 shadow-xl-colored">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <div class="inline-flex lg:hidden items-center space-x-3 mb-6">
+                        <div class="w-12 h-12 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-graduation-cap text-white text-lg"></i>
+                        </div>
+                        <h1 class="text-2xl font-bold gradient-text font-display">QUIZZO</h1>
+                    </div>
+                    
+                    <h2 class="text-2xl font-bold text-secondary-900 mb-2">Welcome Back!</h2>
+                    <p class="text-secondary-600">Sign in to continue your learning journey</p>
+                </div>
+
+                <!-- Trust Badges -->
+                <div class="flex justify-center space-x-4 mb-8">
+                    <div class="flex items-center px-3 py-2 bg-primary-50 rounded-full border border-primary-200">
+                        <i class="fas fa-shield-check text-primary-600 text-sm mr-2"></i>
+                        <span class="text-xs font-medium text-primary-700">Secure Login</span>
+                    </div>
+                    <div class="flex items-center px-3 py-2 bg-success-50 rounded-full border border-success-200">
+                        <i class="fas fa-user-shield text-success-600 text-sm mr-2"></i>
+                        <span class="text-xs font-medium text-success-700">Privacy Protected</span>
+                    </div>
+                </div>
+
+                <!-- Login Form -->
+                <form method="post" action="{{ url_for('login') }}" class="space-y-6">
+                    <!-- Username Field -->
+                    <div class="space-y-2">
+                        <label for="username" class="block text-sm font-semibold text-secondary-700">
+                            <i class="fas fa-user mr-2 text-secondary-400"></i>Username or Email
+                        </label>
+                        <input type="text" 
+                               name="username" 
+                               id="username" 
+                               required
+                               placeholder="Enter your username or email"
+                               class="modern-input focus-ring">
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="space-y-2">
+                        <label for="password" class="block text-sm font-semibold text-secondary-700">
+                            <i class="fas fa-lock mr-2 text-secondary-400"></i>Password
+                        </label>
+                        <div class="relative">
+                            <input type="password" 
+                                   name="password" 
+                                   id="password" 
+                                   required
+                                   placeholder="Enter your password"
+                                   class="modern-input focus-ring pr-12">
+                            <button type="button" 
+                                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600"
+                                    onclick="togglePassword()">
+                                <i class="fas fa-eye" id="password-toggle"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="checkbox" 
+                                   name="remember-me" 
+                                   class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2">
+                            <span class="text-sm text-secondary-600 font-medium">Remember me</span>
+                        </label>
+                        <a href="#" class="text-sm font-semibold text-primary-600 hover:text-primary-500 transition-colors">
+                            Forgot password?
+                        </a>
+                    </div>
+
+                    <!-- Success Message -->
+                    {% if session.signup_success %}
+                    <div class="notification success animate-scale-in">
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle mr-3"></i>
+                            <span>{{ session.signup_success }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Error Message -->
+                    {% if error %}
+                    <div class="notification error animate-scale-in">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-circle mr-3"></i>
+                            <span>{{ error }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full btn-primary text-lg font-semibold py-4">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Sign In to QUIZZO
+                    </button>
+
+                    <!-- Divider -->
+                    <div class="relative my-6">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-secondary-200"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-4 bg-white text-secondary-500 font-medium">New to QUIZZO?</span>
+                        </div>
+                    </div>
+
+                    <!-- Sign Up Link -->
+                    <a href="{{ url_for('signup') }}" 
+                       class="w-full btn-secondary text-center py-4 block hover-lift">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Create Your Account
+                    </a>
+                </form>
+            </div>
+
+            <!-- Security Info -->
+            <div class="mt-8 text-center">
+                <p class="text-sm text-secondary-500 mb-4">Your data is protected with enterprise-grade security</p>
+                <div class="flex justify-center items-center space-x-6 text-secondary-400">
+                    <div class="flex items-center space-x-1">
+                        <i class="fas fa-lock text-xs"></i>
+                        <span class="text-xs font-medium">256-bit SSL</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <i class="fas fa-shield-alt text-xs"></i>
+                        <span class="text-xs font-medium">SOC 2 Compliant</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <i class="fas fa-check-circle text-xs"></i>
+                        <span class="text-xs font-medium">99.9% Uptime</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const passwordToggle = document.getElementById('password-toggle');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            passwordToggle.classList.remove('fa-eye');
+            passwordToggle.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            passwordToggle.classList.remove('fa-eye-slash');
+            passwordToggle.classList.add('fa-eye');
+        }
+    }
+    
+    // Add floating animation delays
+    document.addEventListener('DOMContentLoaded', function() {
+        const floatingElements = document.querySelectorAll('.floating-element');
+        floatingElements.forEach((element, index) => {
+            element.style.animationDelay = `${index * 2}s`;
+        });
+        
+        // Form validation enhancement
+        const inputs = document.querySelectorAll('.modern-input');
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                if (this.value.trim() !== '') {
+                    this.classList.add('has-value');
+                } else {
+                    this.classList.remove('has-value');
+                }
+            });
+        });
+    });
+</script>
+
+<style>
+    .modern-input.has-value {
+        border-color: #22c55e;
+        background-color: #f0fdf4;
+    }
+    
+    .floating-element:nth-child(1) { animation-duration: 8s; }
+    .floating-element:nth-child(2) { animation-duration: 10s; }
+    .floating-element:nth-child(3) { animation-duration: 12s; }
+</style>
+{% endblock %}

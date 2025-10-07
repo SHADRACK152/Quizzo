@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}My Results - QUIZZO{% endblock %}
+
+{% block content %}
+<!-- Premium Navigation -->
+<nav class="glass-dark border-b border-white/10 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <!-- Brand -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-graduation-cap text-white text-lg"></i>
+                </div>
+                <h1 class="text-xl font-bold text-white">QUIZZO</h1>
+                <span class="text-xs bg-accent-500 text-white px-2 py-1 rounded-full">PREMIUM</span>
+            </div>
+            
+            <!-- Navigation Links -->
+            <div class="hidden md:flex items-center space-x-4">
+                <a href="{{ url_for('dashboard') }}" class="nav-link text-white hover:text-primary-300">
+                    <i class="fas fa-dashboard mr-2"></i>Dashboard
+                </a>
+                <div class="h-6 w-px bg-white/20"></div>
+                <a href="{{ url_for('logout') }}" class="nav-link text-white hover:text-red-300">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-primary-600 via-primary-700 to-accent-600 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-white mb-4">
+                    <i class="fas fa-chart-line mr-3"></i>My Performance Results
+                </h1>
+                <p class="text-xl text-primary-100 max-w-3xl mx-auto">
+                    Track your academic journey with detailed analytics and AI-powered insights.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="modern-card">
+            <div class="border-b border-gray-200 pb-6 mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+                    <i class="fas fa-trophy text-primary-500 mr-3"></i>
+                    My Exam Results
+                </h2>
+                <p class="text-gray-600">Comprehensive overview of your academic performance and achievements</p>
+            </div>
+            
+            {% if results %}
+                <!-- Performance Summary -->
+                {% set completed_results = results | selectattr('session.status', 'equalto', 'completed') | selectattr('results_visible', 'equalto', true) | list %}
+                {% if completed_results %}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                        <div class="text-3xl font-bold text-blue-600">{{ completed_results|length }}</div>
+                        <div class="text-blue-800 font-medium">Exams Completed</div>
+                    </div>
+                    {% if completed_results %}
+                    {% set avg_score = (completed_results | sum(attribute='score_percentage')) / (completed_results|length) %}
+                    <div class="bg-green-50 p-6 rounded-lg border border-green-200">
+                        <div class="text-3xl font-bold text-green-600">{{ "%.1f"|format(avg_score) }}%</div>
+                        <div class="text-green-800 font-medium">Average Score</div>
+                    </div>
+                    {% set high_scores = completed_results | selectattr('score_percentage', 'ge', 80) | list %}
+                    <div class="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+                        <div class="text-3xl font-bold text-yellow-600">{{ high_scores|length }}</div>
+                        <div class="text-yellow-800 font-medium">High Scores (80%+)</div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Results List -->
+                <div class="space-y-6">
+                    {% for result in results %}
+                    <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-semibold text-[#8B5C2A] mb-2">{{ result.exam.title }}</h3>
+                                <div class="flex items-center space-x-4 text-sm text-gray-600">
+                                    <span>📅 {{ result.session.end_time.strftime('%Y-%m-%d %H:%M') if result.session.end_time else 'In progress' }}</span>
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium
+                                        {% if result.session.status == 'completed' %}bg-green-100 text-green-800
+                                        {% elif result.session.status == 'disqualified' %}bg-red-100 text-red-800
+                                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                        {{ result.session.status|title }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                {% if result.session.status == 'completed' %}
+                                    {% if result.results_visible %}
+                                        <div class="text-2xl font-bold 
+                                            {% if result.score_percentage >= 80 %}text-green-600
+                                            {% elif result.score_percentage >= 60 %}text-yellow-600
+                                            {% else %}text-red-600{% endif %}">
+                                            {{ result.score_percentage }}%
+                                        </div>
+                                        <div class="text-sm text-gray-600">
+                                            {{ result.correct_answers }}/{{ result.total_questions }} correct
+                                        </div>
+                                    {% else %}
+                                        <div class="text-lg font-bold text-gray-600">Results Pending</div>
+                                        <div class="text-sm text-gray-500">
+                                            Available after all students complete
+                                        </div>
+                                    {% endif %}
+                                {% elif result.session.status == 'disqualified' %}
+                                    <div class="text-xl font-bold text-red-600">Disqualified</div>
+                                    <div class="text-sm text-red-500">Academic integrity violation</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% if result.session.status == 'completed' and result.results_visible %}
+                        <!-- Performance Bar -->
+                        <div class="mb-4">
+                            <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                <span>Performance</span>
+                                <span>{{ result.score_percentage }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="h-2 rounded-full 
+                                    {% if result.score_percentage >= 80 %}bg-green-500
+                                    {% elif result.score_percentage >= 60 %}bg-yellow-500
+                                    {% else %}bg-red-500{% endif %}" 
+                                    style="width: {{ result.score_percentage }}%"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Grade Badge -->
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center space-x-2">
+                                {% if result.score_percentage >= 90 %}
+                                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">A</span>
+                                    <span class="text-green-600 text-sm">Excellent!</span>
+                                {% elif result.score_percentage >= 80 %}
+                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">B</span>
+                                    <span class="text-blue-600 text-sm">Good work!</span>
+                                {% elif result.score_percentage >= 70 %}
+                                    <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">C</span>
+                                    <span class="text-yellow-600 text-sm">Fair</span>
+                                {% elif result.score_percentage >= 60 %}
+                                    <span class="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">D</span>
+                                    <span class="text-orange-600 text-sm">Needs improvement</span>
+                                {% else %}
+                                    <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">F</span>
+                                    <span class="text-red-600 text-sm">More study needed</span>
+                                {% endif %}
+                            </div>
+                            <a href="{{ url_for('view_results', session_id=result.session.id) }}" 
+                               class="px-4 py-2 bg-[#4CBB17] text-white rounded hover:bg-green-600 transition-colors text-sm">
+                                View Details
+                            </a>
+                        </div>
+                        {% elif result.session.status == 'completed' and not result.results_visible %}
+                        <!-- Pending Results -->
+                        <div class="mb-4">
+                            <div class="bg-gray-100 p-4 rounded-lg text-center">
+                                <div class="text-gray-600 mb-2">
+                                    <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Results will be available once all students complete the exam
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    {{ result.total_questions }} questions answered
+                                </div>
+                            </div>
+                        </div>
+                        {% elif result.session.status == 'disqualified' %}
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex items-center text-red-800">
+                                <span class="text-xl mr-2">⚠️</span>
+                                <div>
+                                    <div class="font-medium">Exam was terminated due to academic integrity concerns</div>
+                                    <div class="text-sm text-red-600 mt-1">Please contact your instructor for more information.</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <div class="text-gray-400 text-6xl mb-4">📋</div>
+                    <h3 class="text-xl font-semibold text-gray-600 mb-2">No exam results yet</h3>
+                    <p class="text-gray-500 mb-6">Complete some exams to see your results here</p>
+                    <a href="{{ url_for('dashboard') }}" 
+                       class="inline-block px-6 py-3 bg-[#4CBB17] text-white rounded-lg hover:bg-green-600 transition-colors">
+                        Browse Available Exams
+                    </a>
+                </div>
+            {% endif %}
+
+            <div class="mt-8 pt-6 border-t border-gray-200">
+                <a href="{{ url_for('dashboard') }}" 
+                   class="inline-block px-6 py-3 bg-[#8B5C2A] text-white rounded-lg hover:bg-[#6d4622] transition-colors">
+                    ← Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

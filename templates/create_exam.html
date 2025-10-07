@@ -1,0 +1,1204 @@
+<script>
+function updatePassingScore(value) {
+    document.getElementById('passing-score-display').textContent = value + '%';
+}
+</script>
+{% extends "base.html" %}
+
+{% block title %}Create Premium Exam - QUIZZO{% endblock %}
+
+{% block content %}
+<!-- Premium Navigation -->
+<nav class="glass-dark border-b border-white/10 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <!-- Brand -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-graduation-cap text-white text-lg"></i>
+                </div>
+                <h1 class="text-xl font-bold text-white">QUIZZO</h1>
+                <span class="text-xs bg-accent-500 text-white px-2 py-1 rounded-full">PREMIUM</span>
+            </div>
+            
+            <!-- Navigation Links -->
+            <div class="hidden md:flex items-center space-x-4">
+                <a href="{{ url_for('dashboard') }}" class="nav-link text-white hover:text-primary-300">
+                    <i class="fas fa-dashboard mr-2"></i>Dashboard
+                </a>
+                <a href="{{ url_for('manage_exams') }}" class="nav-link text-white hover:text-primary-300">
+                    <i class="fas fa-list mr-2"></i>Manage Exams
+                </a>
+                <div class="h-6 w-px bg-white/20"></div>
+                <a href="{{ url_for('logout') }}" class="nav-link text-white hover:text-red-300">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-primary-600 via-primary-700 to-accent-600 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-white mb-4">
+                    <i class="fas fa-plus-circle mr-3"></i>Create Premium Exam
+                </h1>
+                <p class="text-xl text-primary-100 max-w-3xl mx-auto">
+                    Harness the power of AI and advanced analytics to create engaging, personalized examinations that adapt to your students' needs.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {% if step == 'initial' %}
+        <!-- Exam Creation Dashboard -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            <!-- AI Generation Card -->
+            <div class="modern-card hover-lift">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-robot text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">AI-Powered Generation</h3>
+                    <p class="text-gray-600 mb-4">Let our advanced AI create tailored questions based on your curriculum and learning objectives.</p>
+                    <div class="text-sm text-primary-600 font-medium">
+                        <i class="fas fa-star mr-1"></i>Premium Feature
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Creation Card -->
+            <div class="modern-card hover-lift">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-gradient-to-r from-accent-500 to-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-edit text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Manual Creation</h3>
+                    <p class="text-gray-600 mb-4">Craft custom questions with our intuitive editor featuring rich text, media uploads, and advanced formatting.</p>
+                    <div class="text-sm text-accent-600 font-medium">
+                        <i class="fas fa-tools mr-1"></i>Professional Tools
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import/Template Card -->
+            <div class="modern-card hover-lift">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-gradient-to-r from-success-500 to-success-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-file-import text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Import & Templates</h3>
+                    <p class="text-gray-600 mb-4">Use pre-built templates or import questions from CSV, Word documents, and question banks.</p>
+                    <div class="text-sm text-success-600 font-medium">
+                        <i class="fas fa-clock mr-1"></i>Time Saver
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Creation Form -->
+        <div class="modern-card">
+            <div class="border-b border-gray-200 pb-6 mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Exam Configuration</h2>
+                <p class="text-gray-600">Set up your exam parameters and generation preferences</p>
+                
+                <!-- Hidden AI Status Elements (runs in background) -->
+                <div style="display: none;">
+                    <div id="status-icon" class="w-3 h-3 bg-gray-400 rounded-full"></div>
+                    <div id="status-text">Checking AI services...</div>
+                    <div id="groq-status">Checking...</div>
+                    <div id="hf-status">Checking...</div>
+                    <div id="cohere-status">Checking...</div>
+                </div>
+            </div>
+
+            <form method="post" action="{{ url_for('create_exam') }}" class="space-y-8" id="exam-creation-form">
+                <input type="hidden" name="action" value="preview_exam">
+                
+                <!-- Basic Information -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <i class="fas fa-info-circle text-primary-500 mr-2"></i>
+                            Basic Information
+                        </h3>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-tag mr-2"></i>Exam Title
+                            </label>
+                            <input type="text" name="exam_title" required 
+                                   class="modern-input focus-ring"
+                                   placeholder="e.g., Advanced Mathematics Midterm">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-book mr-2"></i>Subject/Topic
+                            </label>
+                            <select name="topic" class="modern-input focus-ring">
+                                <option value="mathematics">📐 Mathematics</option>
+                                <option value="science">🔬 Science</option>
+                                <option value="history">📚 History</option>
+                                <option value="literature">📖 Literature</option>
+                                <option value="technology">💻 Technology</option>
+                                <option value="business">💼 Business</option>
+                                <option value="medicine">🏥 Medicine</option>
+                                <option value="engineering">⚙️ Engineering</option>
+                                <option value="custom">✨ Custom Topic</option>
+                            </select>
+                        </div>
+
+                        <div id="custom-topic" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-pencil-alt mr-2"></i>Custom Topic
+                            </label>
+                            <input type="text" name="custom_topic" 
+                                   class="modern-input focus-ring"
+                                   placeholder="Enter your custom topic">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-layer-group mr-2"></i>Difficulty Level
+                            </label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <label class="flex items-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-primary-300 transition-colors">
+                                    <input type="radio" name="difficulty" value="beginner" class="sr-only">
+                                    <div class="flex-1 text-center">
+                                        <div class="text-green-500 text-lg mb-1">🟢</div>
+                                        <div class="font-medium text-sm">Beginner</div>
+                                    </div>
+                                </label>
+                                <label class="flex items-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-primary-300 transition-colors">
+                                    <input type="radio" name="difficulty" value="intermediate" class="sr-only" checked>
+                                    <div class="flex-1 text-center">
+                                        <div class="text-yellow-500 text-lg mb-1">🟡</div>
+                                        <div class="font-medium text-sm">Intermediate</div>
+                                    </div>
+                                </label>
+                                <label class="flex items-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-primary-300 transition-colors">
+                                    <input type="radio" name="difficulty" value="advanced" class="sr-only">
+                                    <div class="flex-1 text-center">
+                                        <div class="text-red-500 text-lg mb-1">🔴</div>
+                                        <div class="font-medium text-sm">Advanced</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <i class="fas fa-cogs text-primary-500 mr-2"></i>
+                            Exam Settings
+                        </h3>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-list-ol mr-2"></i>Number of Questions
+                                </label>
+                                <select name="num_questions" class="modern-input focus-ring">
+                                    <option value="10">10 Questions</option>
+                                    <option value="15">15 Questions</option>
+                                    <option value="20" selected>20 Questions</option>
+                                    <option value="25">25 Questions</option>
+                                    <option value="30">30 Questions</option>
+                                    <option value="50">50 Questions</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-clock mr-2"></i>Time Limit (minutes)
+                                </label>
+                                <select name="time_limit" class="modern-input focus-ring">
+                                    <option value="15">15 minutes</option>
+                                    <option value="30" selected>30 minutes</option>
+                                    <option value="45">45 minutes</option>
+                                    <option value="60">1 hour</option>
+                                    <option value="90">1.5 hours</option>
+                                    <option value="120">2 hours</option>
+                                    <option value="0">No time limit</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-bullseye mr-2"></i>Passing Score (%)
+                            </label>
+                            <div class="relative">
+                                <input type="range" name="passing_score" min="30" max="90" value="60" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                       oninput="updatePassingScore(this.value)">
+                                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                    <span>30%</span>
+                                    <span id="passing-score-display" class="font-medium text-primary-600">60%</span>
+                                    <span>90%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Settings -->
+                        <div class="border-t border-gray-200 pt-6">
+                            <h4 class="text-md font-semibold text-gray-900 mb-4 flex items-center">
+                                <i class="fas fa-star text-accent-500 mr-2"></i>
+                                Premium Features
+                            </h4>
+                            
+                            <div class="space-y-4">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="shuffle_questions" class="rounded text-primary-600 focus:ring-primary-500">
+                                    <span class="ml-3 text-sm text-gray-700">Shuffle question order</span>
+                                </label>
+                                
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="show_results" checked class="rounded text-primary-600 focus:ring-primary-500">
+                                    <span class="ml-3 text-sm text-gray-700">Show results immediately after completion</span>
+                                </label>
+                                
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="allow_retake" class="rounded text-primary-600 focus:ring-primary-500">
+                                    <span class="ml-3 text-sm text-gray-700">Allow multiple attempts</span>
+                                </label>
+                                
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="proctoring" class="rounded text-primary-600 focus:ring-primary-500">
+                                    <span class="ml-3 text-sm text-gray-700">Enable AI proctoring</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Exam Scheduling -->
+                        <div class="border-t border-gray-200 pt-6">
+                            <h4 class="text-md font-semibold text-gray-900 mb-4 flex items-center">
+                                <i class="fas fa-clock text-blue-500 mr-2"></i>
+                                Exam Scheduling
+                            </h4>
+                            
+                            <div class="space-y-4">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="enable_scheduling" id="enable-scheduling" class="rounded text-primary-600 focus:ring-primary-500" onchange="toggleScheduling()">
+                                    <span class="ml-3 text-sm text-gray-700">Schedule exam for specific time period</span>
+                                </label>
+                                
+                                <div id="scheduling-options" class="hidden space-y-4 ml-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                <i class="fas fa-play mr-2 text-green-500"></i>Start Date & Time
+                                            </label>
+                                            <input type="datetime-local" name="scheduled_start" 
+                                                   class="modern-input focus-ring"
+                                                   min="">
+                                            <div class="text-xs text-gray-500 mt-1">When students can start taking the exam</div>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                <i class="fas fa-stop mr-2 text-red-500"></i>End Date & Time
+                                            </label>
+                                            <input type="datetime-local" name="scheduled_end" 
+                                                   class="modern-input focus-ring"
+                                                   min="">
+                                            <div class="text-xs text-gray-500 mt-1">When the exam becomes unavailable</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-blue-100 p-3 rounded-lg">
+                                        <div class="flex items-start">
+                                            <i class="fas fa-info-circle text-blue-600 mr-2 mt-0.5"></i>
+                                            <div class="text-sm text-blue-800">
+                                                <strong>Scheduling Info:</strong>
+                                                <ul class="mt-1 space-y-1">
+                                                    <li>• Students will see a countdown timer until the exam starts</li>
+                                                    <li>• Exam becomes unavailable after the end time</li>
+                                                    <li>• Students can only access the exam during the scheduled window</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Generation Section -->
+                <div class="bg-gradient-to-r from-primary-50 to-accent-50 p-8 rounded-2xl border border-primary-200">
+                    <div class="flex items-start space-x-4">
+                        <div class="w-12 h-12 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-magic text-white text-lg"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">
+                                🤖 AI-Powered Question Generation
+                            </h3>
+                            <p class="text-gray-700 mb-6">
+                                Our advanced AI analyzes your requirements and generates high-quality, engaging questions 
+                                tailored to your curriculum. Each question includes multiple plausible distractors and 
+                                detailed explanations.
+                            </p>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div class="bg-white p-4 rounded-lg border border-primary-200">
+                                    <div class="text-primary-600 font-semibold text-sm mb-1">Question Types</div>
+                                    <div class="text-xs text-gray-600">Multiple choice, True/False, Fill-in-the-blank</div>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border border-primary-200">
+                                    <div class="text-primary-600 font-semibold text-sm mb-1">Smart Difficulty</div>
+                                    <div class="text-xs text-gray-600">Adaptive complexity based on learning level</div>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border border-primary-200">
+                                    <div class="text-primary-600 font-semibold text-sm mb-1">Quality Assurance</div>
+                                    <div class="text-xs text-gray-600">Auto-reviewed for accuracy and clarity</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-comment-alt mr-2"></i>Additional Context (Optional)
+                                </label>
+                                <textarea name="context" rows="3" 
+                                          class="modern-input focus-ring"
+                                          placeholder="Provide specific topics, chapters, or learning objectives you'd like the AI to focus on..."></textarea>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-question mr-2"></i>Question Type
+                                    </label>
+                                    <select id="ai-question-type" class="modern-input focus-ring">
+                                        <option value="multiple_choice">📋 Multiple Choice</option>
+                                        <option value="true_false">✅ True/False</option>
+                                        <option value="text">📝 Text/Essay</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-list-ol mr-2"></i>Number of Questions
+                                    </label>
+                                    <select id="ai-num-questions" class="modern-input focus-ring">
+                                        <option value="5">5 Questions</option>
+                                        <option value="10" selected>10 Questions</option>
+                                        <option value="15">15 Questions</option>
+                                        <option value="20">20 Questions</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Topic Analysis Section -->
+                            <div id="topic-analysis" class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 hidden">
+                                <h4 class="font-semibold text-blue-900 mb-2">🔍 Topic Analysis</h4>
+                                <div id="analysis-content" class="text-sm text-blue-800"></div>
+                            </div>
+                            
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <button type="button" id="analyze-topic-btn" class="btn-secondary flex items-center justify-center space-x-2">
+                                    <i class="fas fa-search"></i>
+                                    <span>Analyze Topic</span>
+                                </button>
+                                <button type="button" id="ai-generate-btn" class="btn-primary flex items-center justify-center space-x-2 flex-1">
+                                    <i class="fas fa-rocket"></i>
+                                    <span>Generate Smart Questions</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Enhanced Loading Spinner with Stages -->
+                            <div id="ai-loading-spinner" class="mt-8 hidden">
+                                <div class="text-center">
+                                    <div class="inline-flex items-center justify-center w-16 h-16 mb-4">
+                                        <svg class="animate-spin w-16 h-16" viewBox="0 0 50 50">
+                                            <circle cx="25" cy="25" r="20" fill="none" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4"/>
+                                        </svg>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <div id="loading-stage" class="text-lg font-semibold text-primary-600">Initializing AI...</div>
+                                        <div id="loading-description" class="text-sm text-gray-600">Preparing to generate questions</div>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div id="loading-progress" class="bg-gradient-to-r from-primary-500 to-accent-500 h-2 rounded-full transition-all duration-500" style="width: 10%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Generated Questions Display -->
+                            <div id="ai-generated-questions" class="mt-8 hidden"></div>
+                            <div id="ai-questions-hidden" style="display:none;"></div>
+                            
+                            <script>
+                            let selectedQuestions = [];
+                            
+                            // Enhanced API Status Check Function
+                            async function checkApiStatus() {
+                                const statusIcon = document.getElementById('status-icon');
+                                const statusText = document.getElementById('status-text');
+                                const statusDiv = document.getElementById('ai-status-indicator');
+                                
+                                // Show checking state
+                                statusIcon.className = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
+                                statusText.textContent = '🔍 Checking AI services...';
+                                
+                                try {
+                                    const response = await fetch('/check_ai_status');
+                                    const data = await response.json();
+                                    
+                                    // Update individual service status
+                                    document.getElementById('groq-status').innerHTML = data.status.groq ? 
+                                        '<span class="text-green-600">✅ Ready</span>' : 
+                                        '<span class="text-gray-500">❌ Not configured</span>';
+                                    
+                                    document.getElementById('hf-status').innerHTML = data.status.huggingface ? 
+                                        '<span class="text-green-600">✅ Ready</span>' : 
+                                        '<span class="text-gray-500">❌ Not configured</span>';
+                                        
+                                    document.getElementById('cohere-status').innerHTML = data.status.cohere ? 
+                                        '<span class="text-green-600">✅ Ready</span>' : 
+                                        '<span class="text-gray-500">❌ Not configured</span>';
+                                    
+                                    // Count free AI services (excluding openrouter and templates)
+                                    const freeServices = data.status.groq + data.status.huggingface + data.status.cohere + data.status.together;
+                                    
+                                    if (freeServices > 0) {
+                                        // Free AI services available
+                                        statusIcon.className = 'w-3 h-3 bg-green-500 rounded-full';
+                                        statusText.innerHTML = `🚀 ${freeServices} free AI service(s) ready! Unlimited question generation available.`;
+                                        statusDiv.className = 'mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg';
+                                        
+                                        // Update the tip
+                                        const tipDiv = statusDiv.querySelector('.text-blue-600');
+                                        if (tipDiv) {
+                                            tipDiv.className = 'mt-3 text-xs text-green-600 bg-green-100 rounded p-2';
+                                            tipDiv.innerHTML = '<strong>🎉 Awesome!</strong> You have free AI services configured. Generate unlimited questions with advanced AI!';
+                                        }
+                                    } else if (data.status.openrouter) {
+                                        // Only premium service available
+                                        statusIcon.className = 'w-3 h-3 bg-purple-500 rounded-full';
+                                        statusText.innerHTML = '💎 Premium OpenRouter configured. <span class="text-sm text-purple-600">Consider adding free AI services for unlimited use.</span>';
+                                        statusDiv.className = 'mt-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg';
+                                        
+                                        // Update the tip to encourage free services
+                                        const tipDiv = statusDiv.querySelector('.text-blue-600');
+                                        if (tipDiv) {
+                                            tipDiv.className = 'mt-3 text-xs text-purple-600 bg-purple-100 rounded p-2';
+                                            tipDiv.innerHTML = '<strong>💡 Tip:</strong> Add free AI services (Groq, HuggingFace) for unlimited generation without costs! <a href="QUICK_GROQ_SETUP.md" target="_blank" class="underline font-medium">2-minute setup →</a>';
+                                        }
+                                    } else {
+                                        // No AI services configured
+                                        statusIcon.className = 'w-3 h-3 bg-orange-500 rounded-full animate-pulse';
+                                        statusText.innerHTML = '📚 Using template questions. <span class="text-sm text-orange-600">Set up free AI for unlimited smart questions!</span>';
+                                        statusDiv.className = 'mt-4 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg';
+                                        
+                                        // Update the tip to encourage setup
+                                        const tipDiv = statusDiv.querySelector('.text-blue-600');
+                                        if (tipDiv) {
+                                            tipDiv.className = 'mt-3 text-xs text-orange-600 bg-orange-100 rounded p-2';
+                                            tipDiv.innerHTML = '<strong>🚀 Get Started:</strong> Set up a free AI service in 2 minutes for unlimited question generation! <a href="QUICK_GROQ_SETUP.md" target="_blank" class="underline font-medium bg-orange-200 px-2 py-1 rounded">Quick Groq Setup →</a>';
+                                        }
+                                    }
+                                    
+                                    showToast(`Status updated: ${data.message}`, freeServices > 0 ? 'success' : 'info');
+                                    
+                                } catch (error) {
+                                    statusIcon.className = 'w-3 h-3 bg-red-500 rounded-full';
+                                    statusText.textContent = '❌ Could not check AI status. Templates available.';
+                                    console.error('Status check error:', error);
+                                }
+                            }
+                            
+                            // Topic Analysis Function
+                            document.getElementById('analyze-topic-btn').onclick = async function() {
+                                const topic = document.querySelector('select[name="topic"]').value;
+                                const customTopic = document.querySelector('input[name="custom_topic"]')?.value;
+                                const finalTopic = topic === 'custom' ? customTopic : topic;
+                                
+                                if (!finalTopic) {
+                                    showToast('Please select or enter a topic first', 'warning');
+                                    return;
+                                }
+                                
+                                this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Analyzing...';
+                                this.disabled = true;
+                                
+                                try {
+                                    const response = await fetch('/analyze_topic', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ topic: finalTopic })
+                                    });
+                                    
+                                    const data = await response.json();
+                                    
+                                    if (data.status === 'success' && data.analysis) {
+                                        const analysis = data.analysis;
+                                        const analysisDiv = document.getElementById('topic-analysis');
+                                        const contentDiv = document.getElementById('analysis-content');
+                                        
+                                        let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+                                        
+                                        if (analysis.main_concepts) {
+                                            html += `<div><strong>Main Concepts:</strong><br><span class="text-xs">${analysis.main_concepts.join(', ')}</span></div>`;
+                                        }
+                                        
+                                        if (analysis.suggested_question_types) {
+                                            html += `<div><strong>Recommended Types:</strong><br><span class="text-xs">${analysis.suggested_question_types.join(', ')}</span></div>`;
+                                        }
+                                        
+                                        html += `</div>`;
+                                        contentDiv.innerHTML = html;
+                                        analysisDiv.classList.remove('hidden');
+                                        
+                                        showToast('Topic analyzed successfully!', 'success');
+                                    } else {
+                                        showToast('Analysis completed with basic information', 'info');
+                                    }
+                                } catch (error) {
+                                    console.error('Analysis error:', error);
+                                    showToast('Topic analysis failed, but you can still generate questions', 'warning');
+                                } finally {
+                                    this.innerHTML = '<i class="fas fa-search mr-2"></i>Analyze Topic';
+                                    this.disabled = false;
+                                }
+                            };
+                            
+                            // Enhanced Question Generation
+                            document.getElementById('ai-generate-btn').onclick = async function() {
+                                const topic = document.querySelector('select[name="topic"]').value;
+                                const customTopic = document.querySelector('input[name="custom_topic"]')?.value;
+                                const difficulty = document.querySelector('input[name="difficulty"]:checked')?.value || 'intermediate';
+                                const questionType = document.getElementById('ai-question-type').value;
+                                const numQuestions = document.getElementById('ai-num-questions').value;
+                                const context = document.querySelector('textarea[name="context"]').value;
+                                
+                                const finalTopic = topic === 'custom' ? customTopic : topic;
+                                
+                                if (!finalTopic) {
+                                    showToast('Please select or enter a topic first', 'error');
+                                    return;
+                                }
+                                
+                                // Show enhanced loading
+                                showLoadingStages();
+                                
+                                try {
+                                    const response = await fetch('/generate_ai_question', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ 
+                                            topic: finalTopic,
+                                            prompt: `Generate high-quality ${questionType.replace('_', ' ')} questions about ${finalTopic}`,
+                                            num_questions: parseInt(numQuestions),
+                                            question_type: questionType,
+                                            difficulty: difficulty,
+                                            context: context
+                                        })
+                                    });
+                                    
+                                    const data = await response.json();
+                                    hideLoadingStages();
+                                    
+                                    if (data.error) {
+                                        throw new Error(data.error);
+                                    }
+                                    
+                                    if ((data.status === 'success' || data.status === 'success_fallback') && Array.isArray(data.questions)) {
+                                        displayGeneratedQuestions(data.questions, questionType);
+                                        
+                                        if (data.status === 'success_fallback') {
+                                            showToast(`Generated ${data.questions.length} questions using built-in templates!`, 'info');
+                                            if (data.message) {
+                                                showToast(data.message, 'warning');
+                                            }
+                                        } else {
+                                            showToast(`Successfully generated ${data.questions.length} AI questions!`, 'success');
+                                        }
+                                    } else {
+                                        throw new Error('Invalid response format');
+                                    }
+                                    
+                                } catch (error) {
+                                    hideLoadingStages();
+                                    console.error('Generation error:', error);
+                                    document.getElementById('ai-generated-questions').innerHTML = 
+                                        `<div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                                            <div class="flex items-center text-red-700">
+                                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                                <span class="font-semibold">Generation Failed</span>
+                                            </div>
+                                            <div class="text-red-600 text-sm mt-1">${error.message}</div>
+                                        </div>`;
+                                    document.getElementById('ai-generated-questions').classList.remove('hidden');
+                                }
+                            };
+                            
+                            function showLoadingStages() {
+                                const spinner = document.getElementById('ai-loading-spinner');
+                                const questionsDiv = document.getElementById('ai-generated-questions');
+                                
+                                spinner.classList.remove('hidden');
+                                questionsDiv.classList.add('hidden');
+                                
+                                const stages = [
+                                    { text: 'Analyzing topic...', desc: 'Understanding the subject matter', progress: 20 },
+                                    { text: 'Generating questions...', desc: 'Creating intelligent questions', progress: 50 },
+                                    { text: 'Optimizing difficulty...', desc: 'Adjusting question complexity', progress: 70 },
+                                    { text: 'Finalizing content...', desc: 'Polishing and formatting', progress: 90 }
+                                ];
+                                
+                                let currentStage = 0;
+                                const stageInterval = setInterval(() => {
+                                    if (currentStage < stages.length) {
+                                        const stage = stages[currentStage];
+                                        document.getElementById('loading-stage').textContent = stage.text;
+                                        document.getElementById('loading-description').textContent = stage.desc;
+                                        document.getElementById('loading-progress').style.width = stage.progress + '%';
+                                        currentStage++;
+                                    } else {
+                                        clearInterval(stageInterval);
+                                    }
+                                }, 800);
+                                
+                                // Store interval ID for cleanup
+                                spinner.stageInterval = stageInterval;
+                            }
+                            
+                            function hideLoadingStages() {
+                                const spinner = document.getElementById('ai-loading-spinner');
+                                if (spinner.stageInterval) {
+                                    clearInterval(spinner.stageInterval);
+                                }
+                                spinner.classList.add('hidden');
+                            }
+                            
+                            function displayGeneratedQuestions(questions, questionType) {
+                                const container = document.getElementById('ai-generated-questions');
+                                container.classList.remove('hidden');
+                                
+                                // Check if questions are from fallback
+                                const isFallback = questions.length > 0 && questions[0].source === 'fallback';
+                                const sourceIcon = isFallback ? 'fas fa-book' : 'fas fa-robot';
+                                const sourceText = isFallback ? 'Template-Based Questions' : 'AI-Generated Questions';
+                                
+                                let html = `
+                                    <div class="border-t border-gray-200 pt-8">
+                                        <div class="flex items-center justify-between mb-6">
+                                            <h3 class="text-xl font-bold text-gray-900">
+                                                <i class="${sourceIcon} text-primary-500 mr-2"></i>
+                                                ${sourceText} (${questions.length})
+                                            </h3>
+                                            <div class="flex items-center space-x-2">
+                                                <button type="button" onclick="selectAllQuestions(true)" class="btn-sm btn-secondary">Select All</button>
+                                                <button type="button" onclick="selectAllQuestions(false)" class="btn-sm btn-outline">Deselect All</button>
+                                            </div>
+                                        </div>
+                                `;
+                                
+                                if (isFallback) {
+                                    html += `
+                                        <div class="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <div class="flex items-center text-blue-800 text-sm">
+                                                <i class="fas fa-info-circle mr-2"></i>
+                                                <span>These questions are from our built-in educational templates. For AI-generated questions, configure the OpenRouter API key.</span>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                                
+                                html += '<div class="space-y-4">';
+                                `;
+                                
+                                questions.forEach((q, idx) => {
+                                    html += `
+                                        <div class="question-card bg-white border-2 border-gray-200 rounded-xl p-6 transition-all hover:border-primary-300 hover:shadow-md">
+                                            <div class="flex items-start space-x-4">
+                                                <label class="flex items-center mt-1">
+                                                    <input type="checkbox" 
+                                                           class="question-checkbox w-5 h-5 text-primary-600 rounded focus:ring-primary-500" 
+                                                           value="${idx}" 
+                                                           checked 
+                                                           onchange="toggleQuestionSelection(${idx}, this.checked)">
+                                                </label>
+                                                <div class="flex-1">
+                                                    <div class="flex items-center space-x-2 mb-3">
+                                                        <span class="bg-primary-100 text-primary-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                                                            Question ${idx + 1}
+                                                        </span>
+                                                        <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                                                            ${questionType.replace('_', ' ')}
+                                                        </span>
+                                                        ${q.difficulty ? `<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">${q.difficulty}</span>` : ''}
+                                                    </div>
+                                                    <div class="text-gray-900 font-medium mb-3">${q.question}</div>
+                                    `;
+                                    
+                                    if (q.options && Array.isArray(q.options)) {
+                                        html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">';
+                                        q.options.forEach((opt, i) => {
+                                            const isCorrect = q.correct_answer === String.fromCharCode(65 + i);
+                                            html += `
+                                                <div class="flex items-center p-2 rounded-lg border ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}">
+                                                    <span class="font-medium text-sm mr-2">${String.fromCharCode(65 + i)}.</span>
+                                                    <span class="text-sm">${opt}</span>
+                                                    ${isCorrect ? '<i class="fas fa-check text-green-600 ml-auto"></i>' : ''}
+                                                </div>
+                                            `;
+                                        });
+                                        html += '</div>';
+                                    }
+                                    
+                                    if (q.correct_answer && questionType === 'true_false') {
+                                        html += `<div class="text-green-700 text-sm font-medium">Correct Answer: ${q.correct_answer}</div>`;
+                                    }
+                                    
+                                    if (q.explanation) {
+                                        html += `<div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                                    <div class="text-blue-800 text-sm"><strong>Explanation:</strong> ${q.explanation}</div>
+                                                 </div>`;
+                                    }
+                                    
+                                    html += `
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                                
+                                html += `
+                                        </div>
+                                        <div class="mt-8 text-center">
+                                            <button type="button" onclick="addSelectedQuestions()" class="btn-primary text-lg px-8 py-3">
+                                                <i class="fas fa-plus mr-2"></i>
+                                                Add Selected Questions to Exam
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                                
+                                container.innerHTML = html;
+                                
+                                // Initialize all questions as selected
+                                selectedQuestions = questions.map((q, idx) => ({ ...q, index: idx }));
+                            }
+                            
+                            function selectAllQuestions(select) {
+                                const checkboxes = document.querySelectorAll('.question-checkbox');
+                                checkboxes.forEach((cb, idx) => {
+                                    cb.checked = select;
+                                    toggleQuestionSelection(idx, select);
+                                });
+                            }
+                            
+                            function toggleQuestionSelection(index, isSelected) {
+                                const questions = Array.from(document.querySelectorAll('.question-card'));
+                                const questionData = getQuestionData(index);
+                                
+                                if (isSelected) {
+                                    if (!selectedQuestions.find(q => q.index === index)) {
+                                        selectedQuestions.push({ ...questionData, index });
+                                    }
+                                    questions[index].classList.add('ring-2', 'ring-primary-500');
+                                } else {
+                                    selectedQuestions = selectedQuestions.filter(q => q.index !== index);
+                                    questions[index].classList.remove('ring-2', 'ring-primary-500');
+                                }
+                            }
+                            
+                            function getQuestionData(index) {
+                                // This would retrieve the question data from the generated questions
+                                // Implementation depends on how you store the data
+                                return { question: 'Sample question', index: index };
+                            }
+                            
+                            function addSelectedQuestions() {
+                                if (selectedQuestions.length === 0) {
+                                    showToast('Please select at least one question', 'warning');
+                                    return;
+                                }
+                                
+                                // Get the topic for exam title if no custom title is set
+                                const topicSelect = document.querySelector('select[name="topic"]');
+                                const examTitleInput = document.querySelector('input[name="exam_title"]');
+                                const customTopicInput = document.querySelector('input[name="custom_topic"]');
+                                
+                                // Set exam title if not already set
+                                if (!examTitleInput.value.trim()) {
+                                    const selectedTopic = topicSelect.value;
+                                    if (selectedTopic === 'custom' && customTopicInput.value.trim()) {
+                                        examTitleInput.value = `${customTopicInput.value} Exam`;
+                                    } else {
+                                        const topicText = topicSelect.options[topicSelect.selectedIndex].text.replace(/[📐🔬📚📖💻💼🏥⚙️✨]/g, '').trim();
+                                        examTitleInput.value = `${topicText} Exam`;
+                                    }
+                                }
+                                
+                                showToast(`Preparing exam preview with ${selectedQuestions.length} questions...`, 'info');
+                                
+                                // Store questions in hidden form field
+                                document.getElementById('ai-questions-hidden').innerHTML = 
+                                    `<input type="hidden" name="generated_questions" value="${encodeURIComponent(JSON.stringify(selectedQuestions))}">`;
+                                
+                                // Submit form
+                                document.getElementById('exam-creation-form').submit();
+                            }
+                            </script>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alternative Options -->
+                <div class="border-t border-gray-200 pt-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="text-center">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Manual Creation</h3>
+                            <p class="text-gray-600 mb-4">Prefer to craft questions yourself? Use our advanced question builder with rich text editing.</p>
+                            <a href="#manual-creation" onclick="showManualCreation()" 
+                               class="btn-secondary inline-flex items-center space-x-2">
+                                <i class="fas fa-edit"></i>
+                                <span>Manual Creation</span>
+                            </a>
+                        </div>
+                        
+                        <div class="text-center">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Import Questions</h3>
+                            <p class="text-gray-600 mb-4">Upload from CSV, Word documents, or import from your existing question banks.</p>
+                            <a href="#import-questions" onclick="showImportOptions()" 
+                               class="btn-secondary inline-flex items-center space-x-2">
+                                <i class="fas fa-file-import"></i>
+                                <span>Import Questions</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        {% elif step == 'questions_generated' %}
+        <!-- Generated Questions Review -->
+        <div class="modern-card">
+            <div class="border-b border-gray-200 pb-6 mb-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Review Generated Questions</h2>
+                        <p class="text-gray-600">Select and customize the questions you want to include in your exam</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-sm text-gray-500">
+                            <span id="selected-count">0</span> of {{ questions|length }} questions selected
+                        </div>
+                        <button onclick="selectAll()" class="btn-ghost text-sm">Select All</button>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" action="{{ url_for('create_exam') }}">
+                <input type="hidden" name="action" value="finalize_exam">
+                <input type="hidden" name="exam_title" value="{{ exam_title }}">
+                
+                <div class="space-y-4 mb-8">
+                    {% for question in questions %}
+                    <div class="border border-gray-200 rounded-xl p-6 hover:border-primary-300 transition-colors question-item">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0 pt-1">
+                                <input type="checkbox" name="selected_questions" value="{{ loop.index0 }}" 
+                                       class="w-5 h-5 text-primary-600 rounded focus:ring-primary-500"
+                                       onchange="updateSelectedCount()">
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="text-sm font-medium text-gray-900">Question {{ loop.index }}</h4>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded-full">
+                                            {{ question.difficulty|title }}
+                                        </span>
+                                        <button type="button" onclick="editQuestion('{{ loop.index0 }}')"
+                                                class="text-gray-400 hover:text-primary-600">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="text-gray-900 mb-4">{{ question.question }}</div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {% for option in question.options %}
+                                    <div class="flex items-center p-2 rounded {% if loop.index0 == question.correct_answer %}bg-success-50 border border-success-200{% else %}bg-gray-50{% endif %}">
+                                        <span class="w-6 h-6 rounded-full border-2 {% if loop.index0 == question.correct_answer %}border-success-500 bg-success-500 text-white{% else %}border-gray-300{% endif %} flex items-center justify-center text-xs font-medium mr-3">
+                                            {{ ['A', 'B', 'C', 'D'][loop.index0] }}
+                                        </span>
+                                        <span class="text-sm">{{ option }}</span>
+                                        {% if loop.index0 == question.correct_answer %}
+                                        <i class="fas fa-check text-success-600 ml-auto"></i>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="flex items-center justify-between bg-gray-50 p-6 rounded-xl">
+                    <div class="flex items-center space-x-4">
+                        <button type="button" onclick="regenerateQuestions()" 
+                                class="btn-secondary">
+                            <i class="fas fa-sync-alt mr-2"></i>Regenerate Questions
+                        </button>
+                        <button type="button" onclick="addManualQuestion()" 
+                                class="btn-secondary">
+                            <i class="fas fa-plus mr-2"></i>Add Manual Question
+                        </button>
+                    </div>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-check mr-2"></i>Create Exam
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Manual Creation Modal -->
+<div id="manual-creation-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-900">Manual Question Creation</h3>
+                <button onclick="hideManualCreation()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+                            <script>
+                            document.getElementById('ai-generate-btn').onclick = async function() {
+                                const topic = document.querySelector('select[name="topic"]').value;
+                                const customTopic = document.querySelector('input[name="custom_topic"]')?.value;
+                                const difficulty = document.querySelector('input[name="difficulty"]:checked')?.value || 'intermediate';
+                                const questionType = document.getElementById('ai-question-type').value;
+                                const numQuestions = document.getElementById('ai-num-questions').value;
+                                const context = document.querySelector('textarea[name="context"]').value;
+                                let finalTopic = topic === 'custom' ? customTopic : topic;
+                                let prompt = `Generate ${numQuestions} ${questionType.replace('_', ' ')} questions for the topic '${finalTopic}' at ${difficulty} difficulty.`;
+                                if (context) prompt += ` Context: ${context}`;
+                                const res = await fetch('/generate_ai_question', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ prompt, num_questions: numQuestions, question_type: questionType })
+                                });
+                                const data = await res.json();
+                                document.getElementById('ai-loading-spinner').style.display = 'none';
+                                const container = document.getElementById('ai-generated-questions');
+                                container.style.display = 'block';
+                                container.innerHTML = '';
+                                if (Array.isArray(data.questions)) {
+                                    data.questions.forEach((q, idx) => {
+                                        let html = `<div class='border border-primary-200 rounded-lg p-4 mb-4'>
+                                            <label class='flex items-center mb-2'>
+                                                <input type='checkbox' class='mr-2 ai-question-checkbox' checked data-idx='${idx}' />
+                                                <span class='font-bold'>Question ${idx + 1}</span>
+                                            </label>
+                                            <div class='mb-2 text-gray-900'>${q.question}</div>`;
+                                        if (q.options && Array.isArray(q.options)) {
+                                            html += '<ul class="mb-2">';
+                                            q.options.forEach((opt, i) => {
+                                                html += `<li>${String.fromCharCode(65+i)}. ${opt}</li>`;
+                                            });
+                                            html += '</ul>';
+                                        }
+                                        if (q.correct_answer !== undefined) {
+                                            html += `<div class='text-success-700 text-sm'>Correct Answer: ${q.correct_answer}</div>`;
+                                        }
+                                        html += '</div>';
+                                        container.innerHTML += html;
+                                    });
+                                    // Add button to save selected questions
+                                    container.innerHTML += `<button type='button' id='save-ai-questions' class='btn-primary mt-4'>Add Selected Questions to Exam</button>`;
+                                    document.getElementById('save-ai-questions').onclick = function() {
+                                        const selected = [];
+                                        document.querySelectorAll('.ai-question-checkbox:checked').forEach(cb => {
+                                            selected.push(data.questions[cb.getAttribute('data-idx')]);
+                                        });
+                                        
+                                        if (selected.length === 0) {
+                                            showToast('Please select at least one question', 'warning');
+                                            return;
+                                        }
+                                        
+                                        // Get the topic for exam title if no custom title is set
+                                        const topicSelect = document.querySelector('select[name="topic"]');
+                                        const examTitleInput = document.querySelector('input[name="exam_title"]');
+                                        const customTopicInput = document.querySelector('input[name="custom_topic"]');
+                                        
+                                        // Set exam title if not already set
+                                        if (!examTitleInput.value.trim()) {
+                                            const selectedTopic = topicSelect.value;
+                                            if (selectedTopic === 'custom' && customTopicInput.value.trim()) {
+                                                examTitleInput.value = `${customTopicInput.value} Exam`;
+                                            } else {
+                                                const topicText = topicSelect.options[topicSelect.selectedIndex].text.replace(/[📐🔬📚📖💻💼🏥⚙️✨]/g, '').trim();
+                                                examTitleInput.value = `${topicText} Exam`;
+                                            }
+                                        }
+                                        
+                                        showToast(`Preparing exam preview with ${selected.length} questions...`, 'info');
+                                        
+                                        // Store questions in hidden form field for preview
+                                        document.getElementById('ai-questions-hidden').innerHTML = 
+                                            `<input type="hidden" name="generated_questions" value="${encodeURIComponent(JSON.stringify(selected))}">`;
+                                        
+                                        // Submit form to preview
+                                        document.getElementById('exam-creation-form').submit();
+                                    };
+                                } else {
+                                    container.innerHTML = `<pre>${data.questions}</pre>`;
+                                }
+                            };
+                            </script>
+// Handle custom topic selection
+document.querySelector('select[name="topic"]').addEventListener('change', function() {
+    const customTopicDiv = document.getElementById('custom-topic');
+    if (this.value === 'custom') {
+        customTopicDiv.classList.remove('hidden');
+    } else {
+        customTopicDiv.classList.add('hidden');
+    }
+});
+
+// Handle difficulty selection styling
+document.querySelectorAll('input[name="difficulty"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        document.querySelectorAll('label').forEach(label => {
+            if (label.querySelector('input[name="difficulty"]')) {
+                label.classList.remove('border-primary-500', 'bg-primary-50');
+                label.classList.add('border-gray-200');
+            }
+        });
+        
+        if (this.checked) {
+            this.closest('label').classList.remove('border-gray-200');
+            this.closest('label').classList.add('border-primary-500', 'bg-primary-50');
+        }
+    });
+});
+
+// Utility Functions
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toast-container') || createToastContainer();
+    const toast = document.createElement('div');
+    
+    const icons = {
+        success: 'fas fa-check-circle',
+        error: 'fas fa-exclamation-triangle',
+        warning: 'fas fa-exclamation-circle',
+        info: 'fas fa-info-circle'
+    };
+    
+    const colors = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        warning: 'bg-yellow-500',
+        info: 'bg-blue-500'
+    };
+    
+    toast.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2 transform translate-x-full transition-transform duration-300`;
+    toast.innerHTML = `
+        <i class="${icons[type]}"></i>
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Slide in
+    setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'fixed top-4 right-4 z-50 space-y-2';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Toggle scheduling options
+function toggleScheduling() {
+    const checkbox = document.getElementById('enable-scheduling');
+    const options = document.getElementById('scheduling-options');
+    
+    if (checkbox.checked) {
+        options.classList.remove('hidden');
+        // Set minimum date to now
+        const now = new Date();
+        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        const startInput = document.querySelector('input[name="scheduled_start"]');
+        const endInput = document.querySelector('input[name="scheduled_end"]');
+        
+        startInput.min = localDateTime;
+        endInput.min = localDateTime;
+        
+        // Auto-set start time to 1 hour from now
+        const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+        const oneHourDateTime = new Date(oneHourLater.getTime() - oneHourLater.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        if (!startInput.value) {
+            startInput.value = oneHourDateTime;
+        }
+        
+        // Auto-set end time to 24 hours from start
+        startInput.addEventListener('change', function() {
+            if (this.value && !endInput.value) {
+                const startTime = new Date(this.value);
+                const endTime = new Date(startTime.getTime() + 24 * 60 * 60 * 1000);
+                const endDateTime = new Date(endTime.getTime() - endTime.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                endInput.value = endDateTime;
+                endInput.min = this.value;
+            }
+        });
+    } else {
+        options.classList.add('hidden');
+    }
+}
+
+// Form validation and loading states
+document.getElementById('exam-creation-form').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating Exam...';
+        submitBtn.disabled = true;
+    }
+});
+
+// Initialize topic selector and check AI status
+document.addEventListener('DOMContentLoaded', function() {
+    const topicSelect = document.querySelector('select[name="topic"]');
+    const customTopicDiv = document.getElementById('custom-topic');
+    
+    if (topicSelect && customTopicDiv) {
+        topicSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customTopicDiv.classList.remove('hidden');
+            } else {
+                customTopicDiv.classList.add('hidden');
+            }
+        });
+    }
+    
+    // Check AI service status on page load
+    checkApiStatus();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Course Preview - {{ template.template_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{{ url_for('ai_course_generator') }}" class="text-blue-600 hover:text-blue-700 mr-4">
+                        <i class="fas fa-arrow-left"></i> Back to Generator
+                    </a>
+                    <span class="text-xl font-semibold text-gray-900">Course Preview</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="createCourse()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition duration-300">
+                        <i class="fas fa-plus mr-2"></i>Create Course
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Course Header -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+            <div class="flex items-start justify-between mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ course_data.course_title }}</h1>
+                    <div class="flex items-center space-x-4 text-sm text-gray-600">
+                        <span><i class="fas fa-tag mr-1"></i>{{ template.subject_area }}</span>
+                        <span><i class="fas fa-signal mr-1"></i>{{ template.difficulty_level.title() }}</span>
+                        <span><i class="fas fa-clock mr-1"></i>{{ template.total_estimated_hours }} hours</span>
+                        <span><i class="fas fa-robot mr-1 text-blue-600"></i>AI Generated</span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-gray-600">Template Rating</div>
+                    <div class="flex items-center">
+                        {% for i in range(5) %}
+                            {% if i < template.rating %}
+                                <i class="fas fa-star text-yellow-500"></i>
+                            {% else %}
+                                <i class="far fa-star text-gray-300"></i>
+                            {% endif %}
+                        {% endfor %}
+                        <span class="ml-2 text-sm text-gray-600">({{ template.usage_count }} uses)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prose max-w-none">
+                <p class="text-gray-700 leading-relaxed">{{ course_data.description }}</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Course Content -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Learning Objectives -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-target text-green-600 mr-2"></i>Learning Objectives
+                    </h2>
+                    <ul class="space-y-2">
+                        {% for objective in learning_objectives %}
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                            <span class="text-gray-700">{{ objective }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Course Modules -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-6">
+                        <i class="fas fa-list-ul text-blue-600 mr-2"></i>Course Modules
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        {% for module in course_data.modules %}
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-semibold text-gray-900">
+                                    Module {{ module.module_number }}: {{ module.title }}
+                                </h3>
+                                <span class="text-sm text-gray-600">{{ module.estimated_hours }}h</span>
+                            </div>
+                            <p class="text-gray-600 mb-4">{{ module.description }}</p>
+                            
+                            <!-- Module Topics -->
+                            <div class="space-y-4">
+                                {% for topic in module.topics %}
+                                <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <h4 class="font-semibold text-gray-900">{{ topic.topic_title }}</h4>
+                                        <span class="text-xs text-gray-600">{{ topic.estimated_hours }}h</span>
+                                    </div>
+                                    
+                                    <!-- Topic Introduction -->
+                                    {% if topic.content and topic.content.introduction %}
+                                    <div class="mb-4">
+                                        <h5 class="text-sm font-medium text-gray-800 mb-2">Introduction:</h5>
+                                        <p class="text-sm text-gray-700">{{ topic.content.introduction[:200] }}{% if topic.content.introduction|length > 200 %}...{% endif %}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Subtopics -->
+                                    {% if topic.subtopics %}
+                                    <div class="mb-3">
+                                        <div class="text-sm font-medium text-gray-800 mb-2">Subtopics:</div>
+                                        <div class="flex flex-wrap gap-2">
+                                            {% for subtopic in topic.subtopics %}
+                                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">{{ subtopic }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Learning Content Preview -->
+                                    {% if topic.content and topic.content.sections %}
+                                    <div class="mb-3">
+                                        <div class="text-sm font-medium text-gray-800 mb-2">Learning Sections:</div>
+                                        <div class="space-y-2">
+                                            {% for section in topic.content.sections[:2] %}
+                                            <div class="bg-white border-l-4 border-green-500 p-3 rounded">
+                                                <h6 class="font-medium text-sm text-gray-900">{{ section.section_title }}</h6>
+                                                <p class="text-xs text-gray-600 mt-1">{{ section.content[:150] }}{% if section.content|length > 150 %}...{% endif %}</p>
+                                                
+                                                {% if section.code_examples %}
+                                                <div class="mt-2">
+                                                    <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                                                        <i class="fas fa-code mr-1"></i>{{ section.code_examples|length }} code examples
+                                                    </span>
+                                                </div>
+                                                {% endif %}
+                                                
+                                                {% if section.practical_examples %}
+                                                <div class="mt-1">
+                                                    <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                                        <i class="fas fa-lightbulb mr-1"></i>{{ section.practical_examples|length }} practical examples
+                                                    </span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            {% endfor %}
+                                            
+                                            {% if topic.content.sections|length > 2 %}
+                                            <div class="text-xs text-gray-500 text-center">
+                                                ... and {{ topic.content.sections|length - 2 }} more detailed sections
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Enhanced Features Preview -->
+                                    <div class="grid grid-cols-2 gap-2 mt-3">
+                                        {% if topic.content and topic.content.best_practices %}
+                                        <div class="bg-blue-50 p-2 rounded text-xs">
+                                            <i class="fas fa-star text-blue-600 mr-1"></i>
+                                            <span class="font-medium">{{ topic.content.best_practices|length }} Best Practices</span>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if topic.content and topic.content.troubleshooting %}
+                                        <div class="bg-red-50 p-2 rounded text-xs">
+                                            <i class="fas fa-wrench text-red-600 mr-1"></i>
+                                            <span class="font-medium">{{ topic.content.troubleshooting|length }} Troubleshooting Tips</span>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if topic.content and topic.content.detailed_examples %}
+                                        <div class="bg-green-50 p-2 rounded text-xs">
+                                            <i class="fas fa-project-diagram text-green-600 mr-1"></i>
+                                            <span class="font-medium">{{ topic.content.detailed_examples|length }} Real-World Examples</span>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if topic.content and topic.content.visual_diagrams %}
+                                        <div class="bg-purple-50 p-2 rounded text-xs">
+                                            <i class="fas fa-sitemap text-purple-600 mr-1"></i>
+                                            <span class="font-medium">Visual Diagrams Included</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Questions -->
+                                    {% if topic.questions %}
+                                    <div class="mt-3 pt-3 border-t border-gray-200">
+                                        <span class="text-xs text-green-600">
+                                            <i class="fas fa-question-circle mr-1"></i>{{ topic.questions|length }} challenging assessment questions
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- View Details Button -->
+                                    <div class="mt-3 pt-3 border-t border-gray-200">
+                                        <button onclick="viewTopicDetails('{{ topic.topic_title }}')" class="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                                            <i class="fas fa-eye mr-1"></i>View Complete Topic Details
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Prerequisites -->
+                {% if prerequisites %}
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-clipboard-list text-orange-600 mr-2"></i>Prerequisites
+                    </h3>
+                    <ul class="space-y-2">
+                        {% for prereq in prerequisites %}
+                        <li class="flex items-start">
+                            <i class="fas fa-dot-circle text-orange-500 mr-3 mt-1 text-xs"></i>
+                            <span class="text-sm text-gray-700">{{ prereq }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Course Statistics -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-chart-bar text-purple-600 mr-2"></i>Course Statistics
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Total Modules:</span>
+                            <span class="font-semibold">{{ course_data.modules|length }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Total Topics:</span>
+                            <span class="font-semibold">
+                                {% set total_topics = 0 %}
+                                {% for module in course_data.modules %}
+                                    {% set total_topics = total_topics + module.topics|length %}
+                                {% endfor %}
+                                {{ total_topics }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">AI Questions:</span>
+                            <span class="font-semibold">
+                                {% set total_questions = 0 %}
+                                {% for module in course_data.modules %}
+                                    {% for topic in module.topics %}
+                                        {% set total_questions = total_questions + (topic.questions|length if topic.questions else 0) %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {{ total_questions }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Code Examples:</span>
+                            <span class="font-semibold">
+                                {% set total_code_examples = 0 %}
+                                {% for module in course_data.modules %}
+                                    {% for topic in module.topics %}
+                                        {% if topic.content and topic.content.sections %}
+                                            {% for section in topic.content.sections %}
+                                                {% set total_code_examples = total_code_examples + (section.code_examples|length if section.code_examples else 0) %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {{ total_code_examples }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Practical Examples:</span>
+                            <span class="font-semibold">
+                                {% set total_practical = 0 %}
+                                {% for module in course_data.modules %}
+                                    {% for topic in module.topics %}
+                                        {% if topic.content and topic.content.detailed_examples %}
+                                            {% set total_practical = total_practical + topic.content.detailed_examples|length %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {{ total_practical }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Estimated Duration:</span>
+                            <span class="font-semibold">{{ template.total_estimated_hours }} hours</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-cog text-gray-600 mr-2"></i>Actions
+                    </h3>
+                    <div class="space-y-3">
+                        <button onclick="createCourse()" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition duration-300">
+                            <i class="fas fa-plus mr-2"></i>Create Course
+                        </button>
+                        <button onclick="window.print()" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300">
+                            <i class="fas fa-print mr-2"></i>Print Preview
+                        </button>
+                        <a href="{{ url_for('ai_course_generator') }}" class="block w-full bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 transition duration-300 text-center">
+                            <i class="fas fa-arrow-left mr-2"></i>Back to Generator
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Course Modal -->
+    <div id="createModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="text-center">
+                <div class="text-blue-500 text-6xl mb-4">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Create Course from Template</h3>
+                <p class="text-gray-600 mb-6">This will create a new course based on this AI-generated template. You can edit and publish it later.</p>
+                <div class="space-y-3">
+                    <button onclick="confirmCreate()" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition duration-300">
+                        <i class="fas fa-check mr-2"></i>Yes, Create Course
+                    </button>
+                    <button onclick="closeCreateModal()" class="w-full bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition duration-300">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function createCourse() {
+            document.getElementById('createModal').classList.remove('hidden');
+        }
+
+        function closeCreateModal() {
+            document.getElementById('createModal').classList.add('hidden');
+        }
+
+        function viewTopicDetails(topicTitle) {
+            // Create modal for topic details
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg max-w-4xl w-full max-h-full overflow-y-auto">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xl font-semibold text-gray-900">Topic Details: ${topicTitle}</h3>
+                            <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-info-circle text-blue-400"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-700">
+                                        This topic will include comprehensive content with detailed explanations, practical examples, 
+                                        code snippets, visual diagrams, best practices, troubleshooting guides, and hands-on exercises 
+                                        - all generated by our advanced AI system to match GeeksforGeeks quality standards.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-green-800 mb-2"><i class="fas fa-book-open mr-2"></i>Rich Content Includes:</h4>
+                                <ul class="text-sm text-green-700 space-y-1">
+                                    <li>• Comprehensive introductions and explanations</li>
+                                    <li>• Step-by-step tutorials and processes</li>
+                                    <li>• Multiple detailed sections with examples</li>
+                                    <li>• Visual diagrams and flowcharts</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-purple-800 mb-2"><i class="fas fa-tools mr-2"></i>Practical Resources:</h4>
+                                <ul class="text-sm text-purple-700 space-y-1">
+                                    <li>• Working code examples with comments</li>
+                                    <li>• Real-world application scenarios</li>
+                                    <li>• Hands-on exercises and challenges</li>
+                                    <li>• Industry best practices and guidelines</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="bg-red-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-red-800 mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Learning Support:</h4>
+                                <ul class="text-sm text-red-700 space-y-1">
+                                    <li>• Common mistakes and how to avoid them</li>
+                                    <li>• Troubleshooting guides for typical problems</li>
+                                    <li>• Problem-solving approaches</li>
+                                    <li>• Debugging tips and techniques</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="bg-yellow-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-yellow-800 mb-2"><i class="fas fa-graduation-cap mr-2"></i>Assessment & Growth:</h4>
+                                <ul class="text-sm text-yellow-700 space-y-1">
+                                    <li>• Challenging quiz questions with explanations</li>
+                                    <li>• Advanced concepts for further learning</li>
+                                    <li>• Further reading recommendations</li>
+                                    <li>• Professional application examples</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600 text-center">
+                                <i class="fas fa-magic mr-2 text-blue-500"></i>
+                                All content is generated using advanced AI to ensure comprehensive, educational, and practical learning materials 
+                                that match the quality standards of top educational platforms like GeeksforGeeks and Khan Academy.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function confirmCreate() {
+            try {
+                const response = await fetch('/create_course_from_template/{{ template.id }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`Course created successfully! ${result.lessons_created} lessons have been generated.`);
+                    window.location.href = '/dashboard';
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

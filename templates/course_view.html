@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.title }} - QUIZZO{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='ai_course_styles.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Course Header -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="mb-4 md:mb-0">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">{{ course.title }}</h1>
+                <p class="text-gray-600 mb-4">{{ course.description }}</p>
+                
+                <!-- Course Stats -->
+                <div class="flex items-center space-x-6 text-sm text-gray-500">
+                    <span><i class="fas fa-clock mr-1"></i>{{ course.estimated_duration_hours }}h</span>
+                    <span><i class="fas fa-signal mr-1"></i>{{ course.difficulty_level.title() }}</span>
+                    <span><i class="fas fa-users mr-1"></i>{{ course.enrollment_count }} enrolled</span>
+                    <span><i class="fas fa-star mr-1 text-yellow-500"></i>{{ course.rating }}</span>
+                </div>
+            </div>
+            
+            <!-- Progress -->
+            {% if enrollment %}
+            <div class="bg-gray-50 rounded-lg p-4 min-w-64">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Your Progress</h3>
+                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                    <span>{{ completed_lessons }}/{{ total_lessons }} lessons</span>
+                    <span>{{ enrollment.progress_percentage }}%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="bg-blue-600 h-3 rounded-full" style="width: {{ enrollment.progress_percentage }}%"></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Course Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Lessons Sidebar -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-list mr-2"></i>Course Lessons
+                </h3>
+                
+                <div class="space-y-3">
+                    {% for lesson in lessons %}
+                    <div class="lesson-item p-3 rounded-lg border-2 transition-colors
+                        {% if lesson.id == current_lesson_id %}border-blue-500 bg-blue-50
+                        {% elif lesson.id in completed_lesson_ids %}border-green-200 bg-green-50
+                        {% else %}border-gray-200 hover:border-gray-300{% endif %}">
+                        
+                        <a href="{{ url_for('lesson_view', course_id=course.id, lesson_id=lesson.id) }}" 
+                           class="block">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="font-medium text-gray-800">{{ lesson.title }}</h4>
+                                    <p class="text-sm text-gray-500">
+                                        {% if lesson.duration_minutes %}{{ lesson.duration_minutes }}min{% endif %}
+                                        {{ lesson.lesson_type.title() }}
+                                    </p>
+                                </div>
+                                
+                                <div class="flex items-center">
+                                    {% if lesson.id in completed_lesson_ids %}
+                                    <i class="fas fa-check-circle text-green-500"></i>
+                                    {% elif lesson.id == current_lesson_id %}
+                                    <i class="fas fa-play-circle text-blue-500"></i>
+                                    {% else %}
+                                    <i class="fas fa-circle text-gray-300"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="lg:col-span-2">
+            {% if current_lesson %}
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <!-- Lesson Header -->
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ current_lesson.title }}</h2>
+                    <div class="flex items-center space-x-4 text-sm text-gray-500">
+                        <span><i class="fas fa-clock mr-1"></i>{{ current_lesson.duration_minutes }}min</span>
+                        <span><i class="fas fa-tag mr-1"></i>{{ current_lesson.lesson_type.title() }}</span>
+                    </div>
+                </div>
+
+                <!-- Lesson Content -->
+                <div class="prose max-w-none mb-8">
+                    {% if current_lesson.video_url %}
+                    <div class="mb-6">
+                        <iframe src="{{ current_lesson.video_url }}" 
+                                class="w-full h-64 md:h-96 rounded-lg" 
+                                frameborder="0" allowfullscreen></iframe>
+                    </div>
+                    {% endif %}
+                    
+                    {{ current_lesson.content | safe }}
+                </div>
+
+                <!-- Lesson Navigation -->
+                <div class="flex justify-between items-center pt-6 border-t">
+                    {% if prev_lesson %}
+                    <a href="{{ url_for('lesson_view', course_id=course.id, lesson_id=prev_lesson.id) }}" 
+                       class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition">
+                        <i class="fas fa-arrow-left mr-2"></i>Previous
+                    </a>
+                    {% else %}
+                    <div></div>
+                    {% endif %}
+
+                    <button onclick="markLessonComplete({{ current_lesson.id }})" 
+                            class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition
+                            {% if current_lesson.id in completed_lesson_ids %}opacity-50 cursor-not-allowed{% endif %}"
+                            {% if current_lesson.id in completed_lesson_ids %}disabled{% endif %}>
+                        {% if current_lesson.id in completed_lesson_ids %}
+                        <i class="fas fa-check mr-2"></i>Completed
+                        {% else %}
+                        <i class="fas fa-check mr-2"></i>Mark Complete
+                        {% endif %}
+                    </button>
+
+                    {% if next_lesson %}
+                    <a href="{{ url_for('lesson_view', course_id=course.id, lesson_id=next_lesson.id) }}" 
+                       class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                        Next<i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                    {% else %}
+                    <div></div>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <!-- Course Overview when no lesson selected -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Course Overview</h2>
+                
+                {% if course.learning_objectives %}
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">Learning Objectives</h3>
+                    <div class="prose">{{ course.learning_objectives | safe }}</div>
+                </div>
+                {% endif %}
+                
+                {% if course.prerequisites %}
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">Prerequisites</h3>
+                    <div class="prose">{{ course.prerequisites | safe }}</div>
+                </div>
+                {% endif %}
+                
+                <div class="text-center">
+                    {% if lessons %}
+                    <a href="{{ url_for('lesson_view', course_id=course.id, lesson_id=lessons[0].id) }}" 
+                       class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition text-lg">
+                        Start Course
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function markLessonComplete(lessonId) {
+    fetch(`/complete_lesson/${lessonId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+</script>
+{% endblock %}

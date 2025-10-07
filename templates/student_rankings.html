@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Student Rankings - QUIZZO{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Page Header -->
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">🏆 Student Rankings</h1>
+        <p class="text-gray-600">Compete with fellow students and climb the leaderboard!</p>
+    </div>
+
+    <!-- Current User Stats -->
+    {% if current_user_rank %}
+    <div class="max-w-4xl mx-auto mb-8">
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-6 shadow-lg">
+            <div class="text-center">
+                <h2 class="text-xl font-bold mb-2">Your Current Rank</h2>
+                <div class="text-4xl font-bold mb-1">#{{ current_user_rank }}</div>
+                <p class="text-blue-100">out of {{ total_students }} students</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="max-w-6xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Leaderboard -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <div class="bg-gradient-to-r from-yellow-400 to-orange-500 text-white p-6">
+                        <h2 class="text-2xl font-bold flex items-center">
+                            <i class="fas fa-trophy mr-3"></i>
+                            Overall Leaderboard
+                        </h2>
+                        <p class="text-yellow-100 mt-1">Based on total points earned from all challenges</p>
+                    </div>
+                    
+                    <div class="p-6">
+                        {% if rankings %}
+                            <div class="space-y-4">
+                                {% for student in rankings %}
+                                <div class="flex items-center p-4 {% if student.is_current_user %}bg-blue-50 border-2 border-blue-200{% else %}bg-gray-50 hover:bg-gray-100{% endif %} rounded-lg transition-colors">
+                                    <!-- Rank Badge -->
+                                    <div class="flex-shrink-0 mr-4">
+                                        {% if student.rank == 1 %}
+                                        <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                                            <i class="fas fa-crown"></i>
+                                        </div>
+                                        {% elif student.rank == 2 %}
+                                        <div class="w-12 h-12 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                                            2
+                                        </div>
+                                        {% elif student.rank == 3 %}
+                                        <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                                            3
+                                        </div>
+                                        {% else %}
+                                        <div class="w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-400 rounded-full flex items-center justify-center text-gray-700 font-bold text-lg">
+                                            {{ student.rank }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Student Info -->
+                                    <div class="flex-grow">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h3 class="font-semibold text-gray-800 {% if student.is_current_user %}text-blue-700{% endif %}">
+                                                    {{ student.username }}
+                                                    {% if student.is_current_user %}
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 ml-2">
+                                                        You
+                                                    </span>
+                                                    {% endif %}
+                                                </h3>
+                                                <p class="text-sm text-gray-600">{{ student.challenges_completed }} challenges completed</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="text-2xl font-bold text-yellow-600">{{ student.total_points }}</div>
+                                                <div class="text-sm text-gray-500">points</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-8">
+                                <i class="fas fa-users text-gray-400 text-4xl mb-4"></i>
+                                <p class="text-gray-600">No rankings available yet. Complete some challenges to appear on the leaderboard!</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Weekly Top Performers -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-500 to-teal-600 text-white p-4">
+                        <h3 class="text-lg font-bold flex items-center">
+                            <i class="fas fa-fire mr-2"></i>
+                            This Week's Top Performers
+                        </h3>
+                    </div>
+                    <div class="p-4">
+                        {% if weekly_rankings %}
+                            <div class="space-y-3">
+                                {% for performer in weekly_rankings %}
+                                <div class="flex items-center justify-between">
+                                    <span class="font-medium text-gray-800">{{ performer.username }}</span>
+                                    <span class="text-green-600 font-bold">{{ performer.weekly_points }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-gray-600 text-sm">No activity this week yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Point System Info -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <div class="bg-gradient-to-r from-purple-500 to-pink-600 text-white p-4">
+                        <h3 class="text-lg font-bold flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            How Points Work
+                        </h3>
+                    </div>
+                    <div class="p-4">
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Base Participation:</span>
+                                <span class="font-medium">50 pts</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Per Correct Answer:</span>
+                                <span class="font-medium text-green-600">10 pts</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Speed Bonus:</span>
+                                <span class="font-medium text-blue-600">25-100 pts</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Performance Bonus:</span>
+                                <span class="font-medium text-purple-600">10-50 pts</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">First Completion:</span>
+                                <span class="font-medium text-amber-600">100 pts</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-gray-50 rounded">
+                            <p class="text-xs text-gray-600">💡 Complete challenges quickly and accurately to maximize your points!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <div class="bg-gradient-to-r from-indigo-500 to-blue-600 text-white p-4">
+                        <h3 class="text-lg font-bold">Quick Actions</h3>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <a href="{{ url_for('student_challenges') }}" class="block w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded text-center transition-colors">
+                            <i class="fas fa-play mr-2"></i>Take Challenge
+                        </a>
+                        <a href="{{ url_for('student_challenge_history') }}" class="block w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded text-center transition-colors">
+                            <i class="fas fa-history mr-2"></i>View History
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

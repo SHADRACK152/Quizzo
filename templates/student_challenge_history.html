@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Challenge History - QUIZZO{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Challenge History</h1>
+            <p class="text-gray-600 mt-2">Review your past challenge attempts and results</p>
+        </div>
+        <a href="{{ url_for('student_challenges') }}" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Challenges
+        </a>
+    </div>
+
+    {% if history %}
+        <!-- History List -->
+        <div class="space-y-4">
+            {% for entry in history %}
+            <div class="bg-white rounded-lg shadow-md p-6 border-l-4 {% if entry.passed %}border-green-500{% else %}border-red-500{% endif %}">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <div class="flex items-center mb-2">
+                            <h3 class="text-xl font-semibold text-gray-800 mr-3">{{ entry.challenge.title }}</h3>
+                            <span class="px-3 py-1 text-sm font-medium rounded-full {% if entry.passed %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {% if entry.passed %}
+                                    <i class="fas fa-check-circle mr-1"></i>Passed
+                                {% else %}
+                                    <i class="fas fa-times-circle mr-1"></i>Failed
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <p class="text-gray-600 mb-4">{{ entry.challenge.description or 'No description available' }}</p>
+                        
+                        <!-- Results Summary -->
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                            <div class="text-center p-3 bg-gray-50 rounded">
+                                <div class="text-lg font-bold {% if entry.passed %}text-green-600{% else %}text-red-600{% endif %}">{{ entry.percentage }}%</div>
+                                <div class="text-gray-600">Score</div>
+                            </div>
+                            <div class="text-center p-3 bg-gray-50 rounded">
+                                <div class="text-lg font-bold text-gray-800">{{ entry.session.score }}/{{ entry.total_questions }}</div>
+                                <div class="text-gray-600">Correct</div>
+                            </div>
+                            <div class="text-center p-3 bg-gray-50 rounded">
+                                <div class="text-lg font-bold text-gray-800">{{ entry.challenge.passing_score or 70 }}%</div>
+                                <div class="text-gray-600">Required</div>
+                            </div>
+                            <div class="text-center p-3 bg-gray-50 rounded">
+                                <div class="text-lg font-bold text-gray-800">{{ entry.challenge.difficulty|title or 'Medium' }}</div>
+                                <div class="text-gray-600">Difficulty</div>
+                            </div>
+                            <div class="text-center p-3 bg-gray-50 rounded">
+                                <div class="text-lg font-bold text-gray-800">{{ entry.date_completed }}</div>
+                                <div class="text-gray-600">Completed</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ml-6 flex flex-col space-y-2">
+                        <a href="{{ url_for('challenge_results', session_id=entry.session.id) }}" 
+                           class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition duration-200">
+                            <i class="fas fa-eye mr-2"></i>
+                            View Details
+                        </a>
+                        
+                        <a href="{{ url_for('start_challenge', challenge_id=entry.challenge.id) }}" 
+                           class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition duration-200">
+                            <i class="fas fa-redo mr-2"></i>
+                            Retake
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Your Summary</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-600">{{ history|length }}</div>
+                    <div class="text-sm text-gray-600">Total Attempts</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-600">{{ history|selectattr('passed')|list|length }}</div>
+                    <div class="text-sm text-gray-600">Passed</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-purple-600">
+                        {% set all_scores = history|map(attribute='percentage')|list %}
+                        {{ (all_scores|sum / all_scores|length)|round(1) if all_scores else 0 }}%
+                    </div>
+                    <div class="text-sm text-gray-600">Average Score</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-yellow-600">
+                        {{ history|map(attribute='percentage')|max or 0 }}%
+                    </div>
+                    <div class="text-sm text-gray-600">Best Score</div>
+                </div>
+            </div>
+        </div>
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-12">
+            <i class="fas fa-history text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No Challenge History</h3>
+            <p class="text-gray-500 mb-6">You haven't completed any challenges yet. Start your learning journey!</p>
+            <a href="{{ url_for('student_challenges') }}" 
+               class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition duration-200">
+                <i class="fas fa-play mr-2"></i>
+                Start Your First Challenge
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

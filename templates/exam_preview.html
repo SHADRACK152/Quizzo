@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Preview Exam - QUIZZO{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8">
+    <div class="container mx-auto px-4 max-w-6xl">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">📋 Exam Preview</h1>
+            <p class="text-lg text-gray-600">Review your exam before publishing</p>
+        </div>
+
+        <!-- Error Message -->
+        {% if error %}
+        <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                <span class="text-red-800">{{ error }}</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Exam Info Card -->
+        <div class="modern-card mb-8">
+            <div class="border-b border-gray-200 pb-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">📚 {{ exam_data.title }}</h2>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg">
+                        <div class="text-blue-600 font-semibold text-sm">Questions</div>
+                        <div class="text-2xl font-bold text-blue-800">{{ questions|length }}</div>
+                    </div>
+                    <div class="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg">
+                        <div class="text-green-600 font-semibold text-sm">Time Limit</div>
+                        <div class="text-2xl font-bold text-green-800">{{ exam_data.time_limit }}min</div>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg">
+                        <div class="text-purple-600 font-semibold text-sm">Passing Score</div>
+                        <div class="text-2xl font-bold text-purple-800">{{ exam_data.passing_score }}%</div>
+                    </div>
+                    <div class="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg">
+                        <div class="text-orange-600 font-semibold text-sm">Difficulty</div>
+                        <div class="text-lg font-bold text-orange-800 capitalize">{{ exam_data.difficulty }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exam Settings -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-{{ 'check text-green-500' if exam_data.shuffle_questions else 'times text-red-500' }}"></i>
+                    <span class="text-sm">Shuffle Questions</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-{{ 'check text-green-500' if exam_data.show_results else 'times text-red-500' }}"></i>
+                    <span class="text-sm">Show Results</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-{{ 'check text-green-500' if exam_data.allow_retake else 'times text-red-500' }}"></i>
+                    <span class="text-sm">Allow Retake</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-{{ 'check text-green-500' if exam_data.proctoring else 'times text-red-500' }}"></i>
+                    <span class="text-sm">AI Proctoring</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="modern-card mb-8">
+            <div class="flex items-center justify-center space-x-4">
+                <button type="button" onclick="showLecturerView()" id="lecturer-view-btn" 
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                    👨‍🏫 Lecturer View (with answers)
+                </button>
+                <button type="button" onclick="showStudentView()" id="student-view-btn"
+                        class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors">
+                    🎓 Student View (exam mode)
+                </button>
+            </div>
+        </div>
+
+        <!-- Questions Display -->
+        <div id="questions-container">
+            {% for question in questions %}
+            <div class="modern-card mb-6 question-preview" data-question-index="{{ loop.index0 }}">
+                <div class="flex items-start space-x-4">
+                    <div class="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        {{ loop.index }}
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ question.question }}</h3>
+                        
+                        {% if question.options %}
+                        <div class="space-y-3">
+                            {% for option in question.options %}
+                            <label class="flex items-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-primary-300 transition-colors option-label">
+                                <input type="radio" name="question_{{ loop.index0 }}" value="{{ loop.index0 }}" class="sr-only">
+                                <div class="w-6 h-6 border-2 border-gray-300 rounded-full mr-3 flex items-center justify-center option-radio">
+                                    <div class="w-3 h-3 bg-primary-500 rounded-full hidden option-selected"></div>
+                                </div>
+                                <span class="flex-1 option-text">{{ ['A', 'B', 'C', 'D'][loop.index0] }}. {{ option }}</span>
+                                <!-- Lecturer view: show correct answer indicator -->
+                                <span class="correct-indicator ml-2 text-green-600 font-bold hidden">
+                                    {% if question.correct_answer == ['A', 'B', 'C', 'D'][loop.index0] %}✓ Correct{% endif %}
+                                </span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Lecturer view: show explanation -->
+                        {% if question.explanation %}
+                        <div class="mt-4 p-3 bg-gray-50 rounded-lg explanation-box hidden">
+                            <div class="text-sm font-medium text-gray-700 mb-1">💡 Explanation:</div>
+                            <div class="text-sm text-gray-600">{{ question.explanation }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="modern-card">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <a href="{{ url_for('create_exam') }}" class="btn-secondary flex items-center space-x-2">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Edit</span>
+                </a>
+                
+                <div class="flex space-x-4">
+                    <button type="button" onclick="downloadPreview()" class="btn-secondary flex items-center space-x-2">
+                        <i class="fas fa-download"></i>
+                        <span>Download Preview</span>
+                    </button>
+                    
+                    <form method="post" action="{{ url_for('create_exam') }}" class="inline">
+                        <input type="hidden" name="action" value="save_exam">
+                        <input type="hidden" name="exam_title" value="{{ exam_data.title }}">
+                        <input type="hidden" name="time_limit" value="{{ exam_data.time_limit }}">
+                        <input type="hidden" name="passing_score" value="{{ exam_data.passing_score }}">
+                        <input type="hidden" name="difficulty" value="{{ exam_data.difficulty }}">
+                        <input type="hidden" name="topic" value="{{ exam_data.topic }}">
+                        <input type="hidden" name="custom_topic" value="{{ exam_data.custom_topic }}">
+                        <input type="hidden" name="shuffle_questions" value="{{ 'on' if exam_data.shuffle_questions else 'off' }}">
+                        <input type="hidden" name="show_results" value="{{ 'on' if exam_data.show_results else 'off' }}">
+                        <input type="hidden" name="allow_retake" value="{{ 'on' if exam_data.allow_retake else 'off' }}">
+                        <input type="hidden" name="proctoring" value="{{ 'on' if exam_data.proctoring else 'off' }}">
+                        <input type="hidden" name="generated_questions" value="{{ generated_questions_json }}">
+                        
+                        <button type="submit" class="btn-primary text-lg px-8 py-3 flex items-center space-x-2">
+                            <i class="fas fa-save"></i>
+                            <span>Publish Exam</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showLecturerView() {
+    // Update button states
+    document.getElementById('lecturer-view-btn').className = 'px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors';
+    document.getElementById('student-view-btn').className = 'px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors';
+    
+    // Show lecturer-specific elements
+    document.querySelectorAll('.correct-indicator').forEach(el => el.classList.remove('hidden'));
+    document.querySelectorAll('.explanation-box').forEach(el => el.classList.remove('hidden'));
+    
+    showToast('Showing lecturer view with answers and explanations', 'info');
+}
+
+function showStudentView() {
+    // Update button states  
+    document.getElementById('student-view-btn').className = 'px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors';
+    document.getElementById('lecturer-view-btn').className = 'px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors';
+    
+    // Hide lecturer-specific elements
+    document.querySelectorAll('.correct-indicator').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.explanation-box').forEach(el => el.classList.add('hidden'));
+    
+    showToast('Showing student view (exam mode)', 'info');
+}
+
+function downloadPreview() {
+    showToast('Preparing exam preview for download...', 'info');
+    // Future: implement PDF generation
+}
+
+// Interactive option selection for preview
+document.querySelectorAll('.option-label').forEach(label => {
+    label.addEventListener('click', function() {
+        const questionContainer = this.closest('.question-preview');
+        const allOptions = questionContainer.querySelectorAll('.option-label');
+        const allRadios = questionContainer.querySelectorAll('.option-radio');
+        const allSelected = questionContainer.querySelectorAll('.option-selected');
+        
+        // Reset all options in this question
+        allOptions.forEach(opt => {
+            opt.classList.remove('border-primary-500', 'bg-primary-50');
+            opt.classList.add('border-gray-200');
+        });
+        allSelected.forEach(sel => sel.classList.add('hidden'));
+        
+        // Activate this option
+        this.classList.remove('border-gray-200');
+        this.classList.add('border-primary-500', 'bg-primary-50');
+        this.querySelector('.option-selected').classList.remove('hidden');
+    });
+});
+
+// Show toast function
+function showToast(message, type = 'info') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white font-medium z-50 transition-all transform translate-y-full opacity-0`;
+    
+    if (type === 'info') toast.classList.add('bg-blue-500');
+    else if (type === 'success') toast.classList.add('bg-green-500');
+    else if (type === 'warning') toast.classList.add('bg-yellow-500');
+    else if (type === 'error') toast.classList.add('bg-red-500');
+    
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+        toast.classList.remove('translate-y-full', 'opacity-0');
+    }, 100);
+    
+    // Animate out and remove
+    setTimeout(() => {
+        toast.classList.add('translate-y-full', 'opacity-0');
+        setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
+}
+
+// Initialize lecturer view
+document.addEventListener('DOMContentLoaded', function() {
+    showLecturerView();
+});
+</script>
+{% endblock %}

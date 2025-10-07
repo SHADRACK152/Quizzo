@@ -1,0 +1,773 @@
+{% extends "base.html" %}
+
+{% block title %}Exam Schedule - QUIZZO{% endblock %}
+
+{% block content %}
+<!-- Premium Navigation -->
+<nav class="glass-dark border-b border-white/10 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <!-- Brand -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-graduation-cap text-white text-lg"></i>
+                </div>
+                <h1 class="text-xl font-bold text-white">QUIZZO</h1>
+                <span class="text-xs bg-accent-500 text-white px-2 py-1 rounded-full">PREMIUM</span>
+            </div>
+            
+            <!-- Navigation Links -->
+            <div class="hidden md:flex items-center space-x-4">
+                <a href="{{ url_for('dashboard') }}" class="nav-link text-white hover:text-primary-300">
+                    <i class="fas fa-dashboard mr-2"></i>Dashboard
+                </a>
+                {% if user_role == 'lecturer' %}
+                <a href="{{ url_for('manage_exams') }}" class="nav-link text-white hover:text-primary-300">
+                    <i class="fas fa-list mr-2"></i>Manage Exams
+                </a>
+                <a href="{{ url_for('create_exam') }}" class="nav-link text-white hover:text-primary-300">
+                    <i class="fas fa-plus mr-2"></i>Create Exam
+                </a>
+                {% else %}
+                <a href="{{ url_for('my_results') }}" class="nav-link text-white hover:text-primary-300">
+                    <i class="fas fa-chart-bar mr-2"></i>My Results
+                </a>
+                {% endif %}
+                <div class="h-6 w-px bg-white/20"></div>
+                <a href="{{ url_for('logout') }}" class="nav-link text-white hover:text-red-300">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-primary-600 via-primary-700 to-accent-600 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-bold text-white mb-4">
+                        <i class="fas fa-calendar-alt mr-3"></i>Exam Schedule Center
+                    </h1>
+                    <p class="text-xl text-primary-100">
+                        {% if user_role == 'lecturer' %}
+                        Manage exam schedules, set availability windows, and track upcoming examinations.
+                        {% else %}
+                        View your exam schedule, track upcoming tests, and manage your study time.
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    {% if user_role == 'lecturer' %}
+                    <a href="{{ url_for('create_exam') }}" class="btn-primary bg-accent-500 hover:bg-accent-600">
+                        <i class="fas fa-plus mr-2"></i>Schedule Exam
+                    </a>
+                    <button onclick="exportSchedule()" class="btn-secondary bg-white text-primary-700 hover:bg-primary-50">
+                        <i class="fas fa-download mr-2"></i>Export
+                    </button>
+                    {% else %}
+                    <button onclick="refreshSchedule()" class="btn-secondary bg-white text-primary-700 hover:bg-primary-50">
+                        <i class="fas fa-sync mr-2"></i>Refresh
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            <div class="modern-card text-center hover-lift">
+                <div class="w-12 h-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-clock text-white text-lg"></i>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-1">{{ stats.upcoming_count }}</div>
+                <div class="text-sm text-gray-600">Upcoming Exams</div>
+                <div class="text-xs text-primary-600 mt-1">Next 7 days</div>
+            </div>
+            
+            <div class="modern-card text-center hover-lift">
+                <div class="w-12 h-12 bg-gradient-to-r from-success-500 to-success-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-play text-white text-lg"></i>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-1">{{ stats.active_count }}</div>
+                <div class="text-sm text-gray-600">Active Now</div>
+                <div class="text-xs text-success-600 mt-1">In progress</div>
+            </div>
+            
+            <div class="modern-card text-center hover-lift">
+                <div class="w-12 h-12 bg-gradient-to-r from-warning-500 to-warning-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-calendar-check text-white text-lg"></i>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-1">{{ stats.scheduled_count }}</div>
+                <div class="text-sm text-gray-600">Scheduled</div>
+                <div class="text-xs text-warning-600 mt-1">This month</div>
+            </div>
+            
+            <div class="modern-card text-center hover-lift">
+                <div class="w-12 h-12 bg-gradient-to-r from-accent-500 to-accent-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-check-double text-white text-lg"></i>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-1">{{ stats.completed_count }}</div>
+                <div class="text-sm text-gray-600">Completed</div>
+                <div class="text-xs text-accent-600 mt-1">This week</div>
+            </div>
+        </div>
+
+        <!-- Calendar View -->
+        <div class="modern-card mb-8">
+            <div class="border-b border-gray-200 pb-6 mb-8">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 mb-2 flex items-center">
+                            <i class="fas fa-calendar-alt text-primary-600 mr-3"></i>
+                            Exam Calendar
+                        </h2>
+                        <p class="text-gray-600 text-lg">View and manage exam schedules across time</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <select class="modern-input w-auto" id="calendar-view">
+                            <option value="month">Month View</option>
+                            <option value="week">Week View</option>
+                            <option value="day">Day View</option>
+                        </select>
+                        <button onclick="goToToday()" class="btn-ghost px-4 py-2">
+                            <i class="fas fa-dot-circle mr-2"></i>Today
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar Navigation & Legend -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
+                <div class="flex items-center space-x-6">
+                    <div class="flex items-center space-x-3">
+                        <button onclick="previousPeriod()" class="p-3 hover:bg-gray-100 rounded-xl transition-colors">
+                            <i class="fas fa-chevron-left text-gray-600 text-lg"></i>
+                        </button>
+                        <h3 class="text-2xl font-bold text-gray-900 min-w-[180px] text-center" id="calendar-title">{{ current_month }}</h3>
+                        <button onclick="nextPeriod()" class="p-3 hover:bg-gray-100 rounded-xl transition-colors">
+                            <i class="fas fa-chevron-right text-gray-600 text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-6 text-sm font-medium">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-4 h-4 bg-warning-500 rounded-full shadow-sm"></div>
+                        <span class="text-gray-700">Scheduled</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-4 h-4 bg-success-500 rounded-full shadow-sm"></div>
+                        <span class="text-gray-700">Active</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-4 h-4 bg-gray-400 rounded-full shadow-sm"></div>
+                        <span class="text-gray-700">Completed</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Calendar Grid -->
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                <!-- Days of week header -->
+                <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+                    <div class="p-4 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">Sunday</div>
+                    <div class="p-4 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">Monday</div>
+                    <div class="p-4 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">Tuesday</div>
+                    <div class="p-4 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">Wednesday</div>
+                    <div class="p-4 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">Thursday</div>
+                    <div class="p-4 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">Friday</div>
+                    <div class="p-4 text-center text-sm font-semibold text-gray-700">Saturday</div>
+                </div>
+                
+                <!-- Calendar days -->
+                <div class="grid grid-cols-7">
+                    {% for week in calendar_grid %}
+                        {% for day_data in week %}
+                            <div class="min-h-[140px] p-3 border-r border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer relative group {% if day_data.is_today %}bg-primary-50 border-primary-200{% endif %}">
+                                {% if day_data.day %}
+                                    <!-- Day number -->
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-lg font-semibold {% if day_data.is_today %}text-primary-900{% else %}text-gray-900{% endif %}">
+                                            {{ day_data.day }}
+                                        </span>
+                                        {% if day_data.is_today %}
+                                            <span class="text-xs bg-primary-500 text-white px-2 py-1 rounded-full font-medium">Today</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Events for this day -->
+                                    <div class="space-y-1">
+                                        {% for event in day_data.events %}
+                                            <div class="group-hover:scale-105 transition-transform">
+                                                <div class="text-xs px-3 py-2 rounded-lg font-medium truncate cursor-pointer
+                                                    {% if event.type == 'scheduled' %}bg-warning-100 text-warning-800 hover:bg-warning-200
+                                                    {% elif event.type == 'active' %}bg-success-100 text-success-800 hover:bg-success-200 pulse-animation
+                                                    {% else %}bg-gray-100 text-gray-800 hover:bg-gray-200{% endif %}" 
+                                                     title="{{ event.title }} - {{ event.start.strftime('%I:%M %p') }}"
+                                                     onclick="showExamDetails({{ event.exam_id }})">
+                                                    <div class="flex items-center space-x-1">
+                                                        {% if event.type == 'active' %}
+                                                            <i class="fas fa-play text-xs"></i>
+                                                        {% elif event.type == 'scheduled' %}
+                                                            <i class="fas fa-clock text-xs"></i>
+                                                        {% else %}
+                                                            <i class="fas fa-check text-xs"></i>
+                                                        {% endif %}
+                                                        <span>{{ event.title[:10] }}{% if event.title|length > 10 %}...{% endif %}</span>
+                                                    </div>
+                                                    <div class="text-xs opacity-75 mt-1">
+                                                        {{ event.start.strftime('%I:%M %p') }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                        
+                                        <!-- Add exam button for lecturers -->
+                                        {% if user_role == 'lecturer' and day_data.events|length < 3 %}
+                                            <button onclick="scheduleExamForDate('{{ day_data.date }}')" 
+                                                    class="hidden group-hover:block text-xs text-primary-600 hover:text-primary-800 w-full text-left py-1">
+                                                <i class="fas fa-plus mr-1"></i>Add Exam
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <!-- Empty day (previous/next month) -->
+                                    <div class="opacity-30"></div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+                
+        <!-- Exam Lists Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Upcoming Exams -->
+            <div class="modern-card">
+                <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center">
+                    <i class="fas fa-clock text-warning-600 mr-3"></i>
+                    Upcoming Exams
+                </h3>
+                    
+                    {% if upcoming_exams %}
+                        <div class="space-y-4">
+                            {% for exam_data in upcoming_exams %}
+                                <div class="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
+                                    {% if exam_data.exam.is_scheduled and exam_data.exam.scheduled_start %}
+                                        <div class="flex items-center text-sm text-primary-600 mb-2">
+                                            <i class="fas fa-calendar mr-1"></i>
+                                            {{ exam_data.exam.scheduled_start.strftime('%b %d') }}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <h4 class="font-semibold text-gray-900">{{ exam_data.exam.title }}</h4>
+                                    <div class="flex items-center justify-between mt-2">
+                                        <div class="text-sm text-gray-600">
+                                            {{ exam_data.question_count }} questions • 
+                                            {% if exam_data.exam.is_scheduled and exam_data.exam.scheduled_start and exam_data.exam.scheduled_end %}
+                                                {% set duration = ((exam_data.exam.scheduled_end - exam_data.exam.scheduled_start).total_seconds() / 60)|int %}
+                                                {{ duration }} minutes
+                                            {% else %}
+                                                ~{{ exam_data.estimated_time or (exam_data.question_count * 2) }} minutes
+                                            {% endif %}
+                                        </div>
+                                        
+                                        {% if exam_data.exam.is_scheduled and exam_data.exam.scheduled_start %}
+                                            <div class="text-sm font-medium text-primary-600">
+                                                {{ exam_data.exam.scheduled_start.strftime('%I:%M %p') }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if user_role == 'lecturer' %}
+                                        <div class="flex items-center justify-between mt-3">
+                                            <div class="text-sm text-gray-500">
+                                                {{ exam_data.total_attempts }} attempts • {{ exam_data.completed_attempts }} completed
+                                            </div>
+                                            <a href="{{ url_for('exam_analytics', exam_id=exam_data.exam.id) }}" 
+                                               class="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded hover:bg-primary-200">
+                                                View Details
+                                            </a>
+                                        </div>
+                                    {% else %}
+                                        <div class="mt-3">
+                                            {% if exam_data.exam.is_scheduled and exam_data.exam.scheduled_start %}
+                                                {% if current_time < exam_data.exam.scheduled_start %}
+                                                    <a href="{{ url_for('take_exam', exam_id=exam_data.exam.id) }}" 
+                                                       class="text-xs bg-warning-100 text-warning-700 px-2 py-1 rounded">
+                                                        <i class="fas fa-clock mr-1"></i>Scheduled
+                                                    </a>
+                                                {% elif exam_data.exam.scheduled_start <= current_time <= exam_data.exam.scheduled_end %}
+                                                    <a href="{{ url_for('take_exam', exam_id=exam_data.exam.id) }}" 
+                                                       class="text-xs bg-success-100 text-success-700 px-2 py-1 rounded">
+                                                        <i class="fas fa-play mr-1"></i>Available Now
+                                                    </a>
+                                                {% endif %}
+                                            {% else %}
+                                                <a href="{{ url_for('take_exam', exam_id=exam_data.exam.id) }}" 
+                                                   class="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded">
+                                                    <i class="fas fa-play mr-1"></i>Take Exam
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-calendar-times text-4xl mb-4"></i>
+                            <p>No upcoming exams scheduled</p>
+                            {% if user_role == 'lecturer' %}
+                                <a href="{{ url_for('create_exam') }}" class="text-primary-600 hover:text-primary-700 mt-2 inline-block">
+                                    Create your first scheduled exam
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Active Exams -->
+                {% if active_exams %}
+                <div class="modern-card">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">
+                        <i class="fas fa-play text-success-600 mr-2"></i>
+                        Active Exams
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        {% for exam_data in active_exams %}
+                            <div class="p-3 bg-success-50 border border-success-200 rounded-lg">
+                                <h4 class="font-semibold text-success-900">{{ exam_data.exam.title }}</h4>
+                                <div class="text-sm text-success-700 mt-1">
+                                    {% if user_role == 'lecturer' %}
+                                        {{ exam_data.in_progress_attempts }} students taking now
+                                    {% else %}
+                                        {% if exam_data.session and exam_data.session.status == 'in_progress' %}
+                                            <a href="{{ url_for('exam_interface', session_id=exam_data.session.id) }}" 
+                                               class="text-success-800 hover:text-success-900 font-medium">
+                                                Continue Exam →
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ url_for('take_exam', exam_id=exam_data.exam.id) }}" 
+                                               class="text-success-800 hover:text-success-900 font-medium">
+                                                Take Now →
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Quick Actions -->
+                {% if user_role == 'lecturer' %}
+                <div class="modern-card">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">
+                        <i class="fas fa-bolt text-accent-600 mr-2"></i>
+                        Quick Actions
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <a href="{{ url_for('create_exam') }}" 
+                           class="flex items-center p-3 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors">
+                            <i class="fas fa-plus text-primary-600 mr-3"></i>
+                            <div>
+                                <div class="font-medium text-primary-900">Schedule New Exam</div>
+                                <div class="text-sm text-primary-600">Set up a new examination schedule</div>
+                            </div>
+                        </a>
+                        
+                        <a href="{{ url_for('manage_exams') }}" 
+                           class="flex items-center p-3 bg-accent-50 border border-accent-200 rounded-lg hover:bg-accent-100 transition-colors">
+                            <i class="fas fa-chart-bar text-accent-600 mr-3"></i>
+                            <div>
+                                <div class="font-medium text-accent-900">Schedule Analytics</div>
+                                <div class="text-sm text-accent-600">View scheduling patterns and insights</div>
+                            </div>
+                        </a>
+                        
+                        <button onclick="exportSchedule()" 
+                                class="flex items-center p-3 bg-success-50 border border-success-200 rounded-lg hover:bg-success-100 transition-colors w-full text-left">
+                            <i class="fas fa-download text-success-600 mr-3"></i>
+                            <div>
+                                <div class="font-medium text-success-900">Export Schedule</div>
+                                <div class="text-sm text-success-600">Download calendar as CSV</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+        <!-- Upcoming Exams List -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Upcoming Exams -->
+            <div class="modern-card">
+                <div class="border-b border-gray-200 pb-4 mb-6">
+                    <h3 class="text-lg font-bold text-gray-900 flex items-center">
+                        <i class="fas fa-clock text-primary-500 mr-2"></i>
+                        Upcoming Exams
+                    </h3>
+                </div>
+                
+                <div class="space-y-4">
+                    <!-- Sample upcoming exam -->
+                    <div class="flex items-start space-x-4 p-4 bg-primary-50 rounded-lg border border-primary-200">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 bg-primary-500 rounded-lg flex items-center justify-center text-white font-bold">
+                                15
+                            </div>
+                            <div class="text-xs text-center text-primary-600 mt-1">Jan</div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-semibold text-gray-900">Advanced Mathematics Midterm</h4>
+                            <p class="text-sm text-gray-600 mb-2">30 questions • 2 hours • Proctored</p>
+                            <div class="flex items-center justify-between">
+                                <div class="text-sm text-primary-600">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    9:00 AM - 11:00 AM
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button class="text-gray-400 hover:text-primary-600">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-gray-400 hover:text-red-600">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add more sample exams -->
+                    <div class="flex items-start space-x-4 p-4 bg-success-50 rounded-lg border border-success-200">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 bg-success-500 rounded-lg flex items-center justify-center text-white font-bold">
+                                22
+                            </div>
+                            <div class="text-xs text-center text-success-600 mt-1">Jan</div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-semibold text-gray-900">Science Pop Quiz</h4>
+                            <p class="text-sm text-gray-600 mb-2">15 questions • 30 minutes</p>
+                            <div class="flex items-center justify-between">
+                                <div class="text-sm text-success-600">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    2:00 PM - 2:30 PM
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button class="text-gray-400 hover:text-primary-600">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-gray-400 hover:text-red-600">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="modern-card">
+                <div class="border-b border-gray-200 pb-4 mb-6">
+                    <h3 class="text-lg font-bold text-gray-900 flex items-center">
+                        <i class="fas fa-bolt text-accent-500 mr-2"></i>
+                        Quick Actions
+                    </h3>
+                </div>
+                
+                <div class="space-y-4">
+                    <button onclick="scheduleNewExam()" class="w-full p-4 bg-gradient-to-r from-primary-50 to-primary-100 border border-primary-200 rounded-lg hover:from-primary-100 hover:to-primary-200 transition-colors text-left">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-plus text-white"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900">Schedule New Exam</div>
+                                <div class="text-sm text-gray-600">Set up a new examination schedule</div>
+                            </div>
+                        </div>
+                    </button>
+
+                    <button onclick="bulkSchedule()" class="w-full p-4 bg-gradient-to-r from-accent-50 to-accent-100 border border-accent-200 rounded-lg hover:from-accent-100 hover:to-accent-200 transition-colors text-left">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-accent-500 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-calendar-plus text-white"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900">Bulk Schedule</div>
+                                <div class="text-sm text-gray-600">Schedule multiple exams at once</div>
+                            </div>
+                        </div>
+                    </button>
+
+                    <button onclick="viewAnalytics()" class="w-full p-4 bg-gradient-to-r from-success-50 to-success-100 border border-success-200 rounded-lg hover:from-success-100 hover:to-success-200 transition-colors text-left">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-success-500 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-chart-line text-white"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900">Schedule Analytics</div>
+                                <div class="text-sm text-gray-600">View scheduling patterns and insights</div>
+                            </div>
+                        </div>
+                    </button>
+
+                    <button onclick="importSchedule()" class="w-full p-4 bg-gradient-to-r from-warning-50 to-warning-100 border border-warning-200 rounded-lg hover:from-warning-100 hover:to-warning-200 transition-colors text-left">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-warning-500 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-file-import text-white"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900">Import Schedule</div>
+                                <div class="text-sm text-gray-600">Import from CSV or external calendar</div>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Exam Modal -->
+<div id="schedule-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-900">Schedule New Exam</h3>
+                <button onclick="hideScheduleModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Select Exam</label>
+                        <select class="modern-input focus-ring">
+                            <option>Advanced Mathematics Midterm</option>
+                            <option>Science Quiz</option>
+                            <option>History Test</option>
+                        </select>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                            <input type="date" class="modern-input focus-ring">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                            <input type="date" class="modern-input focus-ring">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                            <input type="time" class="modern-input focus-ring">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                            <input type="time" class="modern-input focus-ring">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Instructions</label>
+                        <textarea rows="3" class="modern-input focus-ring" placeholder="Additional instructions for students..."></textarea>
+                    </div>
+                    
+                    <div class="flex items-center justify-end space-x-4">
+                        <button type="button" onclick="hideScheduleModal()" class="btn-ghost">Cancel</button>
+                        <button type="submit" class="btn-primary">Schedule Exam</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add custom CSS for enhanced animations
+const style = document.createElement('style');
+style.textContent = `
+    .pulse-animation {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+    }
+    
+    .hover-lift {
+        transition: all 0.3s ease;
+    }
+    
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .calendar-day-hover {
+        transition: all 0.2s ease;
+    }
+    
+    .calendar-day-hover:hover {
+        transform: scale(1.02);
+        z-index: 10;
+    }
+`;
+document.head.appendChild(style);
+
+function scheduleNewExam() {
+    document.getElementById('schedule-modal').classList.remove('hidden');
+}
+
+function hideScheduleModal() {
+    document.getElementById('schedule-modal').classList.add('hidden');
+}
+
+function selectDay(day) {
+    console.log('Selected day:', day);
+    // Implementation for day selection
+}
+
+function goToToday() {
+    // Scroll to today's date and highlight it
+    const todayElement = document.querySelector('[data-today="true"]');
+    if (todayElement) {
+        todayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        todayElement.classList.add('ring-2', 'ring-primary-400');
+        setTimeout(() => {
+            todayElement.classList.remove('ring-2', 'ring-primary-400');
+        }, 2000);
+    }
+}
+
+function previousPeriod() {
+    // Navigate to previous month
+    console.log('Navigate to previous month');
+}
+
+function nextPeriod() {
+    // Navigate to next month
+    console.log('Navigate to next month');
+}
+
+function showExamDetails(examId) {
+    // Show exam details modal or navigate to exam page
+    window.location.href = `/exam/${examId}/analytics`;
+}
+
+function scheduleExamForDate(date) {
+    // Open schedule modal with pre-selected date
+    document.getElementById('schedule-modal').classList.remove('hidden');
+    const dateInput = document.querySelector('#schedule-modal input[type="datetime-local"]');
+    if (dateInput) {
+        dateInput.value = date + 'T09:00';
+    }
+}
+    console.log('Go to today');
+    // Implementation to navigate to current date
+}
+
+function previousPeriod() {
+    console.log('Previous period');
+    // Implementation for navigation
+}
+
+function nextPeriod() {
+    console.log('Next period');
+    // Implementation for navigation
+}
+
+function bulkSchedule() {
+    showToast('Bulk scheduling feature coming soon!', 'info');
+}
+
+function viewAnalytics() {
+    showToast('Schedule analytics feature coming soon!', 'info');
+}
+
+// Export schedule functionality
+function exportSchedule() {
+    const examData = [
+        ['Exam Title', 'Date', 'Time', 'Duration', 'Questions', 'Status']
+    ];
+    
+    // Add exam data to CSV
+    {% for exam_data in upcoming_exams + active_exams + scheduled_exams %}
+        examData.push([
+            '{{ exam_data.exam.title }}',
+            '{% if exam_data.exam.scheduled_start %}{{ exam_data.exam.scheduled_start.strftime("%Y-%m-%d") }}{% else %}Not scheduled{% endif %}',
+            '{% if exam_data.exam.scheduled_start %}{{ exam_data.exam.scheduled_start.strftime("%H:%M") }}{% else %}Flexible{% endif %}',
+            '{% if exam_data.exam.scheduled_start and exam_data.exam.scheduled_end %}{{ ((exam_data.exam.scheduled_end - exam_data.exam.scheduled_start).total_seconds() / 60)|int }} min{% else %}{{ exam_data.estimated_time or (exam_data.question_count * 2) }} min{% endif %}',
+            '{{ exam_data.question_count }}',
+            '{% if exam_data.exam.scheduled_start %}Scheduled{% else %}Available{% endif %}'
+        ]);
+    {% endfor %}
+    
+    // Convert to CSV
+    const csvContent = examData.map(row => 
+        row.map(field => `"${field}"`).join(',')
+    ).join('\n');
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'exam_schedule.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast('Schedule exported successfully!', 'success');
+}
+
+// Refresh schedule
+function refreshSchedule() {
+    window.location.reload();
+}
+
+// Import schedule placeholder
+function importSchedule() {
+    showToast('Import schedule feature coming soon!', 'info');
+}
+
+// Auto-refresh every 5 minutes for active exams
+{% if active_exams %}
+setInterval(function() {
+    {% if user_role == 'student' %}
+        // Only refresh if there are active exams and we're on the student view
+        window.location.reload();
+    {% endif %}
+}, 300000); // 5 minutes
+{% endif %}
+</script>
+{% endblock %}

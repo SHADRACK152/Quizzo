@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Exam Unavailable - {{ exam.title }}{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>{{ exam.title }}</h1>
+        <p class="text-gray-600">Exam is no longer available</p>
+    </div>
+
+    <div class="unavailable-container">
+        <div class="unavailable-card">
+            <div class="unavailable-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            
+            <h2>⏰ Exam Time Has Expired</h2>
+            
+            <div class="message-content">
+                <p class="main-message">{{ message }}</p>
+                
+                {% if exam.scheduled_start and exam.scheduled_end %}
+                <div class="exam-schedule-info">
+                    <h3>📅 Exam Schedule</h3>
+                    <div class="schedule-details">
+                        <div class="schedule-item">
+                            <strong>Started:</strong> {{ exam.scheduled_start.strftime('%B %d, %Y at %I:%M %p') }}
+                        </div>
+                        <div class="schedule-item">
+                            <strong>Ended:</strong> {{ exam.scheduled_end.strftime('%B %d, %Y at %I:%M %p') }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="next-steps">
+                    <h3>🎯 What's Next?</h3>
+                    <ul>
+                        <li>Check with your lecturer about makeup exam opportunities</li>
+                        <li>Review your other available exams</li>
+                        <li>Set reminders for future exam schedules</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <a href="{{ url_for('students_dashboard') }}" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Back to Dashboard
+                </a>
+                <a href="{{ url_for('my_results') }}" class="btn btn-secondary">
+                    <i class="fas fa-chart-bar"></i> View My Results
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.unavailable-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    padding: 2rem;
+}
+
+.unavailable-card {
+    background: linear-gradient(135deg, var(--danger-50), var(--warning-50));
+    border-radius: 20px;
+    padding: 3rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 600px;
+    width: 100%;
+    border: 1px solid var(--danger-200);
+    position: relative;
+}
+
+.unavailable-icon {
+    background: var(--danger-100);
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+    border: 3px solid var(--danger-300);
+}
+
+.unavailable-icon i {
+    font-size: 3rem;
+    color: var(--danger-600);
+}
+
+.unavailable-card h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--danger-700);
+    margin-bottom: 2rem;
+}
+
+.message-content {
+    text-align: left;
+    margin: 2rem 0;
+}
+
+.main-message {
+    background: var(--danger-100);
+    padding: 1.5rem;
+    border-radius: 10px;
+    color: var(--danger-800);
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 2rem;
+    border-left: 4px solid var(--danger-500);
+}
+
+.exam-schedule-info {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    border: 1px solid var(--gray-200);
+}
+
+.exam-schedule-info h3 {
+    color: var(--primary-700);
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.schedule-details {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.schedule-item {
+    background: var(--gray-50);
+    padding: 0.8rem;
+    border-radius: 8px;
+    color: var(--gray-700);
+    font-size: 1rem;
+}
+
+.schedule-item strong {
+    color: var(--primary-600);
+}
+
+.next-steps {
+    background: var(--primary-50);
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid var(--primary-500);
+}
+
+.next-steps h3 {
+    color: var(--primary-700);
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.next-steps ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.next-steps li {
+    background: white;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    color: var(--gray-700);
+    position: relative;
+    padding-left: 2.5rem;
+    border: 1px solid var(--primary-200);
+}
+
+.next-steps li::before {
+    content: "💡";
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .unavailable-card {
+        padding: 2rem 1rem;
+        margin: 1rem;
+    }
+    
+    .unavailable-icon {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .unavailable-icon i {
+        font-size: 2rem;
+    }
+    
+    .unavailable-card h2 {
+        font-size: 2rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .message-content {
+        text-align: center;
+    }
+    
+    .exam-schedule-info,
+    .next-steps {
+        text-align: left;
+    }
+}
+
+/* Animation for the icon */
+.unavailable-icon i {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+</style>
+{% endblock %}

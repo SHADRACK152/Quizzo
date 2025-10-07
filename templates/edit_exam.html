@@ -1,0 +1,742 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Exam - {{ exam.title }} - QUIZZO{% endblock %}
+
+{% block content %}
+<!-- Premium Navigation -->
+<nav class="glass-dark border-b border-white/10 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <!-- Brand -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-graduation-cap text-white text-lg"></i>
+                </div>
+                <h1 class="text-xl font-bold text-white">QUIZZO</h1>
+                <span class="text-xs bg-accent-500 text-white px-2 py-1 rounded-full">PREMIUM</span>
+            </div>
+            
+            <!-- Navigation Links -->
+            <div class="hidden md:flex items-center space-x-4">
+                <a href="{{ url_for('dashboard') }}" class="nav-link text-white hover:text-primary-300">
+                    <i class="fas fa-dashboard mr-2"></i>Dashboard
+                </a>
+                <a href="{{ url_for('manage_exams') }}" class="nav-link text-white hover:text-primary-300">
+                    <i class="fas fa-list mr-2"></i>Manage Exams
+                </a>
+                <div class="h-6 w-px bg-white/20"></div>
+                <a href="{{ url_for('logout') }}" class="nav-link text-white hover:text-red-300">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-primary-600 via-primary-700 to-accent-600 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-white mb-2">
+                        <i class="fas fa-edit mr-3"></i>Edit Exam
+                    </h1>
+                    <p class="text-xl text-primary-100">{{ exam.title }}</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right text-white">
+                        <div class="text-sm opacity-80">Last modified</div>
+                        <div class="font-medium">{{ exam.created_at.strftime('%B %d, %Y') }}</div>
+                    </div>
+                    <a href="{{ url_for('manage_exams') }}" class="btn-secondary bg-white text-primary-700 hover:bg-primary-50">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Manage
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="modern-card text-center">
+                <div class="text-2xl font-bold text-primary-600 mb-1">{{ exam.questions|length }}</div>
+                <div class="text-sm text-gray-600">Questions</div>
+            </div>
+            <div class="modern-card text-center">
+                <div class="text-2xl font-bold text-accent-600 mb-1">{{ exam.time_limit or 'No' }}</div>
+                <div class="text-sm text-gray-600">Time Limit</div>
+            </div>
+            <div class="modern-card text-center">
+                <div class="text-2xl font-bold text-success-600 mb-1">{{ exam.passing_score or 60 }}%</div>
+                <div class="text-sm text-gray-600">Passing Score</div>
+            </div>
+            <div class="modern-card text-center">
+                <div class="text-2xl font-bold text-warning-600 mb-1">{{ exam.attempts_count or 0 }}</div>
+                <div class="text-sm text-gray-600">Total Attempts</div>
+            </div>
+        </div>
+
+        <form method="post" action="{{ url_for('update_exam', exam_id=exam.id) }}" class="space-y-8" id="edit-exam-form">
+            <!-- Exam Settings -->
+            <div class="modern-card">
+                <div class="border-b border-gray-200 pb-6 mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+                        <i class="fas fa-cog text-primary-500 mr-3"></i>
+                        Exam Settings
+                    </h2>
+                    <p class="text-gray-600">Configure basic exam parameters and behavior</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Left Column -->
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-tag mr-2"></i>Exam Title
+                            </label>
+                            <input type="text" name="exam_title" value="{{ exam.title }}" required 
+                                   class="modern-input focus-ring">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-align-left mr-2"></i>Description
+                            </label>
+                            <textarea name="description" rows="3" 
+                                      class="modern-input focus-ring"
+                                      placeholder="Add a description for this exam...">{{ exam.description or '' }}</textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-layer-group mr-2"></i>Difficulty Level
+                            </label>
+                            <select name="difficulty" class="modern-input focus-ring">
+                                <option value="beginner" {% if exam.difficulty == 'beginner' %}selected{% endif %}>🟢 Beginner</option>
+                                <option value="intermediate" {% if exam.difficulty == 'intermediate' %}selected{% endif %}>🟡 Intermediate</option>
+                                <option value="advanced" {% if exam.difficulty == 'advanced' %}selected{% endif %}>🔴 Advanced</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-tags mr-2"></i>Category/Subject
+                            </label>
+                            <select name="category" class="modern-input focus-ring">
+                                <option value="mathematics" {% if exam.category == 'mathematics' %}selected{% endif %}>📐 Mathematics</option>
+                                <option value="science" {% if exam.category == 'science' %}selected{% endif %}>🔬 Science</option>
+                                <option value="history" {% if exam.category == 'history' %}selected{% endif %}>📚 History</option>
+                                <option value="literature" {% if exam.category == 'literature' %}selected{% endif %}>📖 Literature</option>
+                                <option value="technology" {% if exam.category == 'technology' %}selected{% endif %}>💻 Technology</option>
+                                <option value="business" {% if exam.category == 'business' %}selected{% endif %}>💼 Business</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-clock mr-2"></i>Time Limit (minutes)
+                                </label>
+                                <input type="number" name="time_limit" value="{{ exam.time_limit or '' }}" 
+                                       class="modern-input focus-ring" min="0" placeholder="No limit">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-bullseye mr-2"></i>Passing Score (%)
+                                </label>
+                                <input type="number" name="passing_score" value="{{ exam.passing_score or 60 }}" 
+                                       class="modern-input focus-ring" min="1" max="100">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-redo mr-2"></i>Maximum Attempts
+                            </label>
+                            <select name="max_attempts" class="modern-input focus-ring">
+                                <option value="1" {% if exam.max_attempts == 1 %}selected{% endif %}>1 attempt</option>
+                                <option value="2" {% if exam.max_attempts == 2 %}selected{% endif %}>2 attempts</option>
+                                <option value="3" {% if exam.max_attempts == 3 %}selected{% endif %}>3 attempts</option>
+                                <option value="0" {% if exam.max_attempts == 0 %}selected{% endif %}>Unlimited</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Advanced Settings -->
+                        <div class="border-t border-gray-200 pt-6">
+                            <h4 class="text-md font-semibold text-gray-900 mb-4 flex items-center">
+                                <i class="fas fa-star text-accent-500 mr-2"></i>
+                                Advanced Options
+                            </h4>
+                            
+                            <div class="space-y-3">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="shuffle_questions" 
+                                           {% if exam.shuffle_questions %}checked{% endif %}
+                                           class="rounded text-primary-600 focus:ring-primary-500">
+                                    <span class="ml-3 text-sm text-gray-700">Shuffle question order for each student</span>
+                                </label>
+                                
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="show_results" 
+                                           {% if exam.show_results %}checked{% endif %}
+                                           class="rounded text-primary-600 focus:ring-primary-500">
+                                    <span class="ml-3 text-sm text-gray-700">Show results immediately after completion</span>
+                                </label>
+                                
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="allow_review" 
+                                           {% if exam.allow_review %}checked{% endif %}
+                                           class="rounded text-primary-600 focus:ring-primary-500">
+                                    <span class="ml-3 text-sm text-gray-700">Allow students to review answers</span>
+                                </label>
+                                
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="proctoring_enabled" 
+                                           {% if exam.proctoring_enabled %}checked{% endif %}
+                                           class="rounded text-primary-600 focus:ring-primary-500">
+                                    <span class="ml-3 text-sm text-gray-700">Enable AI proctoring monitoring</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questions Management -->
+            <div class="modern-card">
+                <div class="border-b border-gray-200 pb-6 mb-8">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+                                <i class="fas fa-list-ul text-primary-500 mr-3"></i>
+                                Questions Management
+                            </h2>
+                            <p class="text-gray-600">Edit, reorder, and manage exam questions</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button type="button" onclick="addNewQuestion()" class="btn-secondary">
+                                <i class="fas fa-plus mr-2"></i>Add Question
+                            </button>
+                            <button type="button" onclick="generateMoreQuestions()" class="btn-primary">
+                                <i class="fas fa-magic mr-2"></i>AI Generate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Questions List -->
+                <div id="questions-container" class="space-y-4">
+                    {% for question in exam.questions %}
+                    <div class="question-item border border-gray-200 rounded-xl p-6 hover:border-primary-300 transition-colors" data-question-id="{{ question.id }}">
+                        <div class="flex items-start space-x-4">
+                            <!-- Drag Handle -->
+                            <div class="flex-shrink-0 pt-2 cursor-move text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-grip-vertical"></i>
+                            </div>
+                            
+                            <!-- Question Content -->
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="text-lg font-semibold text-gray-900">Question {{ loop.index }}</h4>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded-full">
+                                            {{ question.difficulty|title }}
+                                        </span>
+                                        <button type="button" onclick="editQuestion({{ question.id }})" 
+                                                class="text-gray-400 hover:text-primary-600 p-2">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" onclick="deleteQuestion({{ question.id }})" 
+                                                class="text-gray-400 hover:text-red-600 p-2">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Question Text -->
+                                <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                                    <div class="text-gray-900 font-medium">{{ question.question_text }}</div>
+                                </div>
+                                
+                                <!-- Answer Options -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {% for option in question.options %}
+                                    <div class="flex items-center p-3 rounded-lg {% if loop.index0 == question.correct_answer %}bg-success-50 border border-success-200{% else %}bg-gray-50 border border-gray-200{% endif %}">
+                                        <span class="w-8 h-8 rounded-full {% if loop.index0 == question.correct_answer %}bg-success-500 text-white{% else %}bg-gray-300 text-gray-600{% endif %} flex items-center justify-center text-sm font-medium mr-3">
+                                            {{ ['A', 'B', 'C', 'D'][loop.index0] }}
+                                        </span>
+                                        <span class="text-sm flex-1">{{ option }}</span>
+                                        {% if loop.index0 == question.correct_answer %}
+                                        <i class="fas fa-check text-success-600 ml-2"></i>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Question Stats -->
+                                <div class="mt-4 flex items-center justify-between text-sm text-gray-500">
+                                    <div class="flex items-center space-x-4">
+                                        <span><i class="fas fa-users mr-1"></i>{{ question.attempts_count or 0 }} attempts</span>
+                                        <span><i class="fas fa-chart-line mr-1"></i>{{ question.success_rate or 0 }}% success rate</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span>Points: {{ question.points or 1 }}</span>
+                                        <span>Time: {{ question.time_limit or 'N/A' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Add Question Template (Hidden) -->
+                <div id="question-template" class="hidden">
+                    <div class="question-item border border-gray-200 rounded-xl p-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Question Text</label>
+                                <textarea class="modern-input focus-ring" rows="3" placeholder="Enter your question..."></textarea>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Option A</label>
+                                    <input type="text" class="modern-input focus-ring" placeholder="Option A">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Option B</label>
+                                    <input type="text" class="modern-input focus-ring" placeholder="Option B">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Option C</label>
+                                    <input type="text" class="modern-input focus-ring" placeholder="Option C">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Option D</label>
+                                    <input type="text" class="modern-input focus-ring" placeholder="Option D">
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Correct Answer</label>
+                                    <select class="modern-input focus-ring">
+                                        <option value="0">Option A</option>
+                                        <option value="1">Option B</option>
+                                        <option value="2">Option C</option>
+                                        <option value="3">Option D</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Points</label>
+                                    <input type="number" class="modern-input focus-ring" value="1" min="1">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Time Limit (seconds)</label>
+                                    <input type="number" class="modern-input focus-ring" placeholder="Optional">
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <button type="button" class="btn-secondary">
+                                    <i class="fas fa-save mr-2"></i>Save Question
+                                </button>
+                                <button type="button" onclick="cancelAddQuestion(this)" class="text-gray-500 hover:text-gray-700">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Changes -->
+            <div class="modern-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-1">Save Changes</h3>
+                        <p class="text-gray-600 text-sm">Review your changes and update the exam</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button type="button" onclick="previewExam()" class="btn-secondary">
+                            <i class="fas fa-eye mr-2"></i>Preview Exam
+                        </button>
+                        <a href="{{ url_for('manage_exams') }}" class="btn-ghost">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save mr-2"></i>Update Exam
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Question Modal -->
+<div id="edit-question-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-900">Edit Question</h3>
+                <button onclick="hideEditModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6" id="edit-question-content">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function addNewQuestion() {
+    const container = document.getElementById('questions-container');
+    const template = document.getElementById('question-template').cloneNode(true);
+    template.id = '';
+    template.classList.remove('hidden');
+    container.appendChild(template);
+}
+
+function cancelAddQuestion(button) {
+    button.closest('.question-item').remove();
+}
+
+function editQuestion(questionId) {
+    document.getElementById('edit-question-modal').classList.remove('hidden');
+    // Load question data and populate modal
+    console.log('Edit question:', questionId);
+}
+
+function hideEditModal() {
+    document.getElementById('edit-question-modal').classList.add('hidden');
+}
+
+function deleteQuestion(questionId) {
+    if (confirm('Are you sure you want to delete this question?')) {
+        document.querySelector(`[data-question-id="${questionId}"]`).remove();
+    }
+}
+
+function generateMoreQuestions() {
+    // Open AI generation modal for adding more questions to existing exam
+    openAIGenerationModal();
+}
+
+function openAIGenerationModal() {
+    // Create and show AI generation modal
+    const modal = document.createElement('div');
+    modal.id = 'ai-generation-modal';
+    modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4';
+    modal.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-purple-500 to-blue-500 text-white p-6 rounded-t-2xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-robot text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">AI Question Generator</h3>
+                            <p class="text-purple-100 text-sm">Add more questions to this exam</p>
+                        </div>
+                    </div>
+                    <button onclick="closeAIModal()" class="text-white/80 hover:text-white text-xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <form id="ai-generation-form" onsubmit="event.preventDefault(); generateQuestionsForExam();">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-list-ol text-purple-500 mr-2"></i>Number of Questions
+                            </label>
+                            <select name="questionCount" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <option value="3">3 questions</option>
+                                <option value="5" selected>5 questions</option>
+                                <option value="10">10 questions</option>
+                                <option value="15">15 questions</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-lightbulb text-purple-500 mr-2"></i>Topics
+                            </label>
+                            <div class="flex space-x-2 mb-2">
+                                <input type="text" id="newTopic" placeholder="Enter topic..."
+                                       class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <button type="button" onclick="addTopicToGeneration()" 
+                                        class="px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div id="generationTopics" class="flex flex-wrap gap-2 min-h-[30px]"></div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-chart-line text-purple-500 mr-2"></i>Difficulty Level
+                            </label>
+                            <select name="difficulty" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <option value="Easy">Easy</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="Hard">Hard</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-cog text-purple-500 mr-2"></i>Question Type
+                            </label>
+                            <select name="questionType" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <option value="multiple_choice" selected>Multiple Choice</option>
+                                <option value="true_false">True/False</option>
+                                <option value="mixed">Mixed Types</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 flex justify-end space-x-4">
+                        <button type="button" onclick="closeAIModal()" 
+                                class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="px-8 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600">
+                            <i class="fas fa-magic mr-2"></i>Generate Questions
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Progress section (hidden initially) -->
+                <div id="generation-progress" class="hidden text-center py-8">
+                    <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                        <i class="fas fa-robot text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Generating questions...</h3>
+                    <div class="max-w-xs mx-auto">
+                        <div class="bg-gray-200 rounded-full h-2 mb-4">
+                            <div class="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-1000" style="width: 0%" id="progress-bar"></div>
+                        </div>
+                        <p class="text-sm text-gray-600" id="progress-text">Initializing AI...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAIModal() {
+    const modal = document.getElementById('ai-generation-modal');
+    if (modal) {
+        modal.remove();
+        document.body.style.overflow = 'auto';
+    }
+}
+
+function addTopicToGeneration() {
+    const input = document.getElementById('newTopic');
+    const topic = input.value.trim();
+    
+    if (topic) {
+        const container = document.getElementById('generationTopics');
+        const tag = document.createElement('span');
+        tag.className = 'inline-flex items-center bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm';
+        tag.innerHTML = `
+            ${topic}
+            <button type="button" onclick="this.parentElement.remove()" class="ml-2 text-purple-600 hover:text-purple-800">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        container.appendChild(tag);
+        input.value = '';
+    }
+}
+
+function generateQuestionsForExam() {
+    const form = document.getElementById('ai-generation-form');
+    const formData = new FormData(form);
+    const topics = Array.from(document.querySelectorAll('#generationTopics span'))
+        .map(span => span.textContent.trim());
+    
+    if (topics.length === 0) {
+        alert('Please add at least one topic');
+        return;
+    }
+    
+    // Hide form and show progress
+    form.style.display = 'none';
+    document.getElementById('generation-progress').classList.remove('hidden');
+    
+    // Simulate AI generation with progress
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const steps = [
+        'Analyzing topics...',
+        'Generating questions...',
+        'Creating answer options...',
+        'Finalizing questions...'
+    ];
+    
+    let currentStep = 0;
+    const interval = setInterval(() => {
+        const progress = ((currentStep + 1) / steps.length) * 100;
+        progressBar.style.width = progress + '%';
+        progressText.textContent = steps[currentStep];
+        
+        currentStep++;
+        
+        if (currentStep >= steps.length) {
+            clearInterval(interval);
+            setTimeout(() => {
+                addGeneratedQuestionsToExam(formData, topics);
+                closeAIModal();
+                showToast('Questions generated and added successfully!', 'success');
+            }, 1000);
+        }
+    }, 1500);
+}
+
+function addGeneratedQuestionsToExam(formData, topics) {
+    const container = document.getElementById('questions-container');
+    const questionCount = parseInt(formData.get('questionCount'));
+    const difficulty = formData.get('difficulty');
+    
+    // Generate sample questions based on topics
+    for (let i = 0; i < questionCount; i++) {
+        const topic = topics[i % topics.length];
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question-item border border-gray-200 rounded-xl p-6 hover:border-primary-300 transition-colors';
+        
+        const questionNumber = container.children.length + 1;
+        questionDiv.innerHTML = `
+            <div class="flex items-start space-x-4">
+                <div class="flex-shrink-0 pt-2 cursor-move text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-grip-vertical"></i>
+                </div>
+                
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-lg font-semibold text-gray-900">Question ${questionNumber}</h4>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                AI Generated
+                            </span>
+                            <span class="text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded-full">
+                                ${difficulty}
+                            </span>
+                            <button type="button" onclick="editQuestion(this)" 
+                                    class="text-gray-400 hover:text-primary-600 p-2">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" onclick="deleteQuestion(this)" 
+                                    class="text-gray-400 hover:text-red-600 p-2">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                        <div class="text-gray-900 font-medium">What is the main principle of ${topic}?</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="flex items-center p-3 rounded-lg bg-success-50 border border-success-200">
+                            <span class="w-8 h-8 rounded-full bg-success-500 text-white flex items-center justify-center text-sm font-medium mr-3">A</span>
+                            <span class="text-sm flex-1">The fundamental concept of ${topic}</span>
+                            <i class="fas fa-check text-success-600 ml-2"></i>
+                        </div>
+                        <div class="flex items-center p-3 rounded-lg bg-gray-50 border border-gray-200">
+                            <span class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-sm font-medium mr-3">B</span>
+                            <span class="text-sm flex-1">A secondary aspect of ${topic}</span>
+                        </div>
+                        <div class="flex items-center p-3 rounded-lg bg-gray-50 border border-gray-200">
+                            <span class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-sm font-medium mr-3">C</span>
+                            <span class="text-sm flex-1">An unrelated concept</span>
+                        </div>
+                        <div class="flex items-center p-3 rounded-lg bg-gray-50 border border-gray-200">
+                            <span class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-sm font-medium mr-3">D</span>
+                            <span class="text-sm flex-1">None of the above</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex items-center justify-between text-sm text-gray-500">
+                        <div class="flex items-center space-x-4">
+                            <span><i class="fas fa-users mr-1"></i>0 attempts</span>
+                            <span><i class="fas fa-chart-line mr-1"></i>0% success rate</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span>Points: 1</span>
+                            <span>Time: N/A</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(questionDiv);
+    }
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg text-white transform translate-x-full transition-transform duration-300 ${
+        type === 'success' ? 'bg-green-500' : 
+        type === 'error' ? 'bg-red-500' : 
+        'bg-blue-500'
+    }`;
+    toast.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'} mr-2"></i>
+            ${message}
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.transform = 'translateX(0)';
+    }, 100);
+    
+    setTimeout(() => {
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function previewExam() {
+    // Implementation for exam preview
+    console.log('Preview exam');
+}
+
+// Make questions sortable
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize drag and drop for questions
+    const container = document.getElementById('questions-container');
+    
+    // Form submission handling
+    document.getElementById('edit-exam-form').addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+        submitBtn.disabled = true;
+    });
+});
+</script>
+{% endblock %}

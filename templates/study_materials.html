@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Study Materials - QUIZZO{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">📚 Study Materials</h1>
+        <p class="text-gray-600">Discover curated learning resources from top educational platforms</p>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Search Box -->
+            <div class="md:col-span-2">
+                <input type="text" name="search" value="{{ search_query }}" 
+                       placeholder="Search materials..." 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <!-- Category Filter -->
+            <select name="category" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>
+                    {{ cat.title() }}
+                </option>
+                {% endfor %}
+            </select>
+            
+            <!-- Material Type Filter -->
+            <select name="type" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="">All Types</option>
+                <option value="video" {% if 'video' == selected_type %}selected{% endif %}>Video</option>
+                <option value="article" {% if 'article' == selected_type %}selected{% endif %}>Article</option>
+                <option value="interactive" {% if 'interactive' == selected_type %}selected{% endif %}>Interactive</option>
+                <option value="pdf" {% if 'pdf' == selected_type %}selected{% endif %}>PDF</option>
+            </select>
+            
+            <!-- Difficulty Filter -->
+            <select name="difficulty" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="">All Levels</option>
+                <option value="beginner" {% if 'beginner' == selected_difficulty %}selected{% endif %}>Beginner</option>
+                <option value="intermediate" {% if 'intermediate' == selected_difficulty %}selected{% endif %}>Intermediate</option>
+                <option value="advanced" {% if 'advanced' == selected_difficulty %}selected{% endif %}>Advanced</option>
+            </select>
+            
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                Search
+            </button>
+        </form>
+    </div>
+
+    <!-- Materials Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for material in materials.items %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+            <!-- Material Type Badge -->
+            <div class="px-4 pt-4">
+                <span class="inline-block px-2 py-1 text-xs font-semibold rounded-full
+                    {% if material.material_type == 'video' %}bg-red-100 text-red-800
+                    {% elif material.material_type == 'article' %}bg-green-100 text-green-800
+                    {% elif material.material_type == 'interactive' %}bg-purple-100 text-purple-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ material.material_type.title() }}
+                </span>
+                <span class="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 ml-2">
+                    {{ material.difficulty_level.title() }}
+                </span>
+            </div>
+            
+            <!-- Content -->
+            <div class="p-4">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ material.title }}</h3>
+                <p class="text-gray-600 text-sm mb-3 line-clamp-3">{{ material.description }}</p>
+                
+                <!-- Source and Rating -->
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm text-gray-500">{{ material.source }}</span>
+                    <div class="flex items-center">
+                        <span class="text-yellow-500">★</span>
+                        <span class="text-sm text-gray-600 ml-1">{{ material.rating }}</span>
+                    </div>
+                </div>
+                
+                <!-- Tags -->
+                {% if material.tags %}
+                <div class="mb-3">
+                    {% for tag in material.tags.split(',')[:3] %}
+                    <span class="inline-block px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded mr-1 mb-1">
+                        {{ tag.strip() }}
+                    </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Actions -->
+                <div class="flex items-center justify-between">
+                    <a href="{{ url_for('view_material', material_id=material.id) }}" 
+                       target="_blank"
+                       class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition">
+                        View Material
+                    </a>
+                    
+                    <button onclick="bookmarkMaterial({{ material.id }})" 
+                            class="bookmark-btn text-gray-500 hover:text-red-500 transition"
+                            data-material-id="{{ material.id }}">
+                        <i class="fas fa-heart {% if material.id in user_bookmarks %}text-red-500{% endif %}"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if materials.pages > 1 %}
+    <div class="flex justify-center mt-8">
+        <nav class="flex items-center space-x-2">
+            {% if materials.has_prev %}
+            <a href="{{ url_for('study_materials', page=materials.prev_num, search=search_query, category=selected_category, type=selected_type, difficulty=selected_difficulty) }}" 
+               class="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Previous</a>
+            {% endif %}
+            
+            {% for page_num in materials.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != materials.page %}
+                    <a href="{{ url_for('study_materials', page=page_num, search=search_query, category=selected_category, type=selected_type, difficulty=selected_difficulty) }}" 
+                       class="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300">{{ page_num }}</a>
+                    {% else %}
+                    <span class="px-3 py-2 text-sm bg-blue-600 text-white rounded">{{ page_num }}</span>
+                    {% endif %}
+                {% else %}
+                <span class="px-3 py-2 text-sm text-gray-500">...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if materials.has_next %}
+            <a href="{{ url_for('study_materials', page=materials.next_num, search=search_query, category=selected_category, type=selected_type, difficulty=selected_difficulty) }}" 
+               class="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Next</a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function bookmarkMaterial(materialId) {
+    fetch(`/bookmark_material/${materialId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const btn = document.querySelector(`[data-material-id="${materialId}"] i`);
+            if (data.bookmarked) {
+                btn.classList.add('text-red-500');
+            } else {
+                btn.classList.remove('text-red-500');
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

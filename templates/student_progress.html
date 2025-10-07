@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+
+{% block title %}Student Progress - QUIZZO{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .performance-ring {
+        transform: rotate(-90deg);
+    }
+    
+    .ai-insight {
+        background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+        animation: glow 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes glow {
+        from { box-shadow: 0 0 20px rgba(250, 177, 160, 0.5); }
+        to { box-shadow: 0 0 30px rgba(250, 177, 160, 0.8); }
+    }
+    
+    .progress-bar {
+        background: linear-gradient(90deg, #a8e6cf 0%, #3eaf7c 100%);
+        border-radius: 10px;
+        height: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .skill-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+        background-size: 200% 200%;
+        animation: gradientShift 3s ease infinite;
+    }
+    
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                    Student Progress Analytics
+                </h1>
+                <p class="text-gray-600 mt-2">
+                    <i class="fas fa-robot text-purple-500 mr-2"></i>
+                    AI-powered insights and performance tracking
+                </p>
+            </div>
+            <div class="flex space-x-4">
+                <button class="bg-white/20 backdrop-blur-md border border-white/30 rounded-lg px-4 py-2 text-gray-700 hover:bg-white/30 transition-all duration-300">
+                    <i class="fas fa-download mr-2"></i>Export Report
+                </button>
+                <button class="bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg px-4 py-2 hover:from-purple-600 hover:to-blue-600 transition-all duration-300">
+                    <i class="fas fa-share-alt mr-2"></i>Share Progress
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Selection -->
+    <div class="glass-card p-6 mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-users text-blue-500 mr-3"></i>Student Selection
+            </h2>
+            <div class="text-sm text-gray-500">
+                Last updated: Just now
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search Students</label>
+                <div class="relative">
+                    <input type="text" id="studentSearch" 
+                           placeholder="Search by name, email, or student ID..."
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Class</label>
+                <select class="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <option>All Classes</option>
+                    <option>Computer Science 101</option>
+                    <option>Mathematics 201</option>
+                    <option>Physics 301</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Insights Panel -->
+    <div class="ai-insight glass-card p-6 mb-8">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mr-4">
+                <i class="fas fa-brain text-white text-xl"></i>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-white">AI Performance Insights</h3>
+                <p class="text-white/80 text-sm">Powered by advanced machine learning</p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white/10 rounded-lg p-4">
+                <div class="text-white font-medium mb-2">Top Performing Areas</div>
+                <div class="text-white/80 text-sm">
+                    <div class="flex items-center mb-1">
+                        <i class="fas fa-check-circle text-green-300 mr-2"></i>
+                        Mathematical Reasoning (94%)
+                    </div>
+                    <div class="flex items-center mb-1">
+                        <i class="fas fa-check-circle text-green-300 mr-2"></i>
+                        Problem Solving (89%)
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-300 mr-2"></i>
+                        Critical Thinking (87%)
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white/10 rounded-lg p-4">
+                <div class="text-white font-medium mb-2">Areas for Improvement</div>
+                <div class="text-white/80 text-sm">
+                    <div class="flex items-center mb-1">
+                        <i class="fas fa-exclamation-triangle text-yellow-300 mr-2"></i>
+                        Time Management (67%)
+                    </div>
+                    <div class="flex items-center mb-1">
+                        <i class="fas fa-exclamation-triangle text-yellow-300 mr-2"></i>
+                        Reading Comprehension (72%)
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-yellow-300 mr-2"></i>
+                        Data Analysis (69%)
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white/10 rounded-lg p-4">
+                <div class="text-white font-medium mb-2">AI Recommendations</div>
+                <div class="text-white/80 text-sm">
+                    <div class="flex items-center mb-1">
+                        <i class="fas fa-lightbulb text-blue-300 mr-2"></i>
+                        Practice timed exercises
+                    </div>
+                    <div class="flex items-center mb-1">
+                        <i class="fas fa-lightbulb text-blue-300 mr-2"></i>
+                        Focus on reading strategies
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-lightbulb text-blue-300 mr-2"></i>
+                        Review statistical concepts
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column - Student List -->
+        <div class="lg:col-span-1">
+            <div class="glass-card p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-list text-purple-500 mr-2"></i>Students
+                </h3>
+                
+                <div class="space-y-3" id="studentList">
+                    <!-- Student Item 1 -->
+                    <div class="bg-white/50 rounded-lg p-4 cursor-pointer hover:bg-white/70 transition-all duration-300 border-l-4 border-green-500">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                                    JS
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-800">John Smith</div>
+                                    <div class="text-sm text-gray-500">ID: STU001</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-green-600">94%</div>
+                                <div class="text-xs text-gray-500">Avg Score</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Student Item 2 -->
+                    <div class="bg-white/50 rounded-lg p-4 cursor-pointer hover:bg-white/70 transition-all duration-300 border-l-4 border-blue-500">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                                    EM
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-800">Emma Martinez</div>
+                                    <div class="text-sm text-gray-500">ID: STU002</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-blue-600">87%</div>
+                                <div class="text-xs text-gray-500">Avg Score</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Student Item 3 -->
+                    <div class="bg-white/50 rounded-lg p-4 cursor-pointer hover:bg-white/70 transition-all duration-300 border-l-4 border-yellow-500">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                                    AJ
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-800">Alex Johnson</div>
+                                    <div class="text-sm text-gray-500">ID: STU003</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-yellow-600">76%</div>
+                                <div class="text-xs text-gray-500">Avg Score</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="w-full mt-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
+                    <i class="fas fa-plus mr-2"></i>View All Students
+                </button>
+            </div>
+        </div>
+        
+        <!-- Right Column - Student Details -->
+        <div class="lg:col-span-2">
+            <!-- Performance Overview -->
+            <div class="glass-card p-6 mb-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-chart-line text-blue-500 mr-2"></i>Performance Overview
+                    </h3>
+                    <div class="flex space-x-2">
+                        <button class="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm">Week</button>
+                        <button class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">Month</button>
+                        <button class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">Year</button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gradient-to-r from-green-400 to-green-600 rounded-lg p-4 text-white">
+                        <div class="text-2xl font-bold">15</div>
+                        <div class="text-sm opacity-90">Exams Completed</div>
+                    </div>
+                    <div class="bg-gradient-to-r from-blue-400 to-blue-600 rounded-lg p-4 text-white">
+                        <div class="text-2xl font-bold">89%</div>
+                        <div class="text-sm opacity-90">Average Score</div>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-400 to-purple-600 rounded-lg p-4 text-white">
+                        <div class="text-2xl font-bold">A-</div>
+                        <div class="text-sm opacity-90">Grade</div>
+                    </div>
+                    <div class="bg-gradient-to-r from-orange-400 to-orange-600 rounded-lg p-4 text-white">
+                        <div class="text-2xl font-bold">7</div>
+                        <div class="text-sm opacity-90">Rank in Class</div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg p-4">
+                    <canvas id="performanceChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+            
+            <!-- Skills Analysis -->
+            <div class="glass-card p-6 mb-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-brain text-purple-500 mr-2"></i>Skills Analysis
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-3">Subject Proficiency</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm text-gray-600">Mathematics</span>
+                                    <span class="text-sm font-medium text-gray-800">94%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="progress-bar w-[94%]"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm text-gray-600">Science</span>
+                                    <span class="text-sm font-medium text-gray-800">87%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="progress-bar w-[87%]"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm text-gray-600">English</span>
+                                    <span class="text-sm font-medium text-gray-800">76%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="progress-bar w-[76%]"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-3">Skill Badges</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="skill-badge text-white px-3 py-1 rounded-full text-sm">
+                                <i class="fas fa-calculator mr-1"></i>Math Wizard
+                            </span>
+                            <span class="skill-badge text-white px-3 py-1 rounded-full text-sm">
+                                <i class="fas fa-puzzle-piece mr-1"></i>Problem Solver
+                            </span>
+                            <span class="skill-badge text-white px-3 py-1 rounded-full text-sm">
+                                <i class="fas fa-clock mr-1"></i>Speed Reader
+                            </span>
+                            <span class="skill-badge text-white px-3 py-1 rounded-full text-sm">
+                                <i class="fas fa-star mr-1"></i>Top Performer
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="glass-card p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-history text-green-500 mr-2"></i>Recent Activity
+                </h3>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center p-3 bg-white/50 rounded-lg">
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-check text-green-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-800">Completed "Algebra Fundamentals"</div>
+                            <div class="text-sm text-gray-500">Score: 94% • 2 hours ago</div>
+                        </div>
+                        <div class="text-green-600 font-bold">A</div>
+                    </div>
+                    
+                    <div class="flex items-center p-3 bg-white/50 rounded-lg">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-book text-blue-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-800">Started "Physics Concepts"</div>
+                            <div class="text-sm text-gray-500">In progress • 1 day ago</div>
+                        </div>
+                        <div class="text-blue-600 font-bold">-</div>
+                    </div>
+                    
+                    <div class="flex items-center p-3 bg-white/50 rounded-lg">
+                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-trophy text-purple-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-800">Earned "Math Wizard" badge</div>
+                            <div class="text-sm text-gray-500">Achievement unlocked • 3 days ago</div>
+                        </div>
+                        <div class="text-purple-600 font-bold">🏆</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Performance Chart
+const ctx = document.getElementById('performanceChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
+        datasets: [{
+            label: 'Average Score',
+            data: [78, 82, 85, 87, 89, 94],
+            borderColor: 'rgb(99, 102, 241)',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+// Student search functionality
+document.getElementById('studentSearch').addEventListener('input', function(e) {
+    // Add search logic here
+    console.log('Searching for:', e.target.value);
+});
+</script>
+{% endblock %}

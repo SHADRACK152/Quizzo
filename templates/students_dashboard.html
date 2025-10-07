@@ -1,0 +1,1768 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard - QUIZZO{% endblock %}
+
+{% block body %}
+<!-- Premium Student Dashboard with Gamification -->
+<div class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 relative overflow-hidden">
+    <!-- 3D Background Elements -->
+    <div class="fixed inset-0 pointer-events-none">
+        <div class="absolute top-20 right-20 w-64 h-64 bg-gradient-to-r from-primary-200/20 to-accent-200/20 rounded-full blur-3xl animate-float"></div>
+        <div class="absolute bottom-20 left-20 w-48 h-48 bg-gradient-to-r from-accent-200/20 to-primary-200/20 rounded-full blur-3xl animate-float-delayed"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-gradient-to-r from-primary-100/10 to-accent-100/10 rounded-full blur-2xl animate-pulse"></div>
+    </div>
+    
+    <!-- Premium Top Navigation -->
+    <nav class="bg-white/70 backdrop-blur-xl border-b border-white/30 sticky top-0 z-50 shadow-lg shadow-primary-100/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Enhanced Logo & Brand -->
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-accent-500 via-primary-500 to-accent-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-200/50 hover:shadow-xl hover:shadow-primary-200/60 transition-all duration-300 transform hover:scale-105">
+                        <i class="fas fa-graduation-cap text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-primary-600 via-accent-600 to-primary-700 bg-clip-text text-transparent font-display">QUIZZO</h1>
+                        <p class="text-xs text-secondary-500 font-medium">Student Portal</p>
+                    </div>
+                </div>
+                
+                <!-- Enhanced Navigation Links -->
+                <div class="hidden md:flex items-center space-x-2">
+                    <a href="{{ url_for('dashboard') }}" class="nav-link-3d active flex items-center px-4 py-2 rounded-xl font-medium transition-all duration-300">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                    <a href="{{ url_for('study_materials') }}" class="nav-link-3d flex items-center px-4 py-2 rounded-xl font-medium transition-all duration-300">
+                        <i class="fas fa-book mr-2"></i>Study Materials
+                    </a>
+                    <a href="{{ url_for('courses') }}" class="nav-link-3d flex items-center px-4 py-2 rounded-xl font-medium transition-all duration-300">
+                        <i class="fas fa-graduation-cap mr-2"></i>Courses
+                    </a>
+                    <a href="{{ url_for('exam_schedule') }}" class="nav-link-3d flex items-center px-4 py-2 rounded-xl font-medium transition-all duration-300">
+                        <i class="fas fa-calendar-alt mr-2"></i>Schedule
+                    </a>
+                    <a href="{{ url_for('my_results') }}" class="nav-link-3d flex items-center px-4 py-2 rounded-xl font-medium transition-all duration-300">
+                        <i class="fas fa-chart-line mr-2"></i>Results
+                    </a>
+                    <a href="{{ url_for('student_progress') }}" class="nav-link-3d flex items-center px-4 py-2 rounded-xl font-medium transition-all duration-300">
+                        <i class="fas fa-trophy mr-2"></i>Progress
+                    </a>
+                </div>
+                
+                <!-- Enhanced User Menu with Gamification -->
+                <div class="flex items-center space-x-4">
+                    <!-- Student Points Display -->
+                    <div class="hidden md:flex items-center space-x-3 bg-gradient-to-r from-accent-50 to-primary-50 rounded-xl px-4 py-2 border border-accent-200/50">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-coins text-accent-600"></i>
+                            <span class="text-sm font-bold text-accent-700">{{ student_points or 0 }}</span>
+                            <span class="text-xs text-accent-600">XP</span>
+                        </div>
+                        <div class="w-px h-4 bg-accent-300"></div>
+                        <div class="flex items-center space-x-1">
+                            <i class="fas fa-trophy text-amber-500 text-sm"></i>
+                            <span class="text-xs font-medium text-amber-600">Rank #{{ student_rank or 'N/A' }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Notifications -->
+                    <div class="relative">
+                        <button class="premium-btn-ghost relative" onclick="toggleNotifications()">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span class="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-red-400 to-red-500 rounded-full animate-ping"></span>
+                            <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                        </button>
+                        
+                        <!-- Enhanced Notifications Dropdown -->
+                        <div id="notifications-dropdown" class="hidden absolute right-0 top-14 w-96 glass-card border border-white/30 shadow-2xl z-50 rounded-2xl overflow-hidden">
+                            <div class="p-4 border-b border-white/20 bg-gradient-to-r from-primary-50 to-accent-50">
+                                <h3 class="font-bold text-secondary-900 flex items-center">
+                                    <i class="fas fa-bell mr-2 text-primary-600"></i>
+                                    Notifications
+                                </h3>
+                            </div>
+                            <div class="max-h-80 overflow-y-auto" id="notifications-list">
+                                <!-- Enhanced notifications will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Enhanced Profile -->
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            {% if user.profile_pic %}
+                                <img src="{{ url_for('static', filename='profile_pics/' + user.profile_pic) }}" 
+                                     alt="Profile" 
+                                     class="w-12 h-12 rounded-xl object-cover border-2 border-primary-200 shadow-lg">
+                            {% else %}
+                                <div class="w-12 h-12 bg-gradient-to-r from-primary-400 via-accent-400 to-primary-500 rounded-xl flex items-center justify-center shadow-lg">
+                                    <span class="text-white font-bold text-sm">{{ user.username[0].upper() }}</span>
+                                </div>
+                            {% endif %}
+                            <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-400 to-green-500 rounded-full border-2 border-white shadow-lg"></div>
+                        </div>
+                        <div class="hidden lg:block">
+                            <p class="font-bold text-secondary-900">{{ user.username }}</p>
+                            <p class="text-xs text-primary-600 font-medium">Student Explorer</p>
+                        </div>
+                        
+                        <!-- Enhanced Dropdown Menu -->
+                        <div class="relative">
+                            <button class="premium-btn-ghost p-1" onclick="toggleUserMenu()">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div id="user-menu" class="hidden absolute right-0 top-10 w-56 glass-card border border-white/30 shadow-2xl z-50 rounded-2xl overflow-hidden">
+                                <div class="py-2">
+                                    <a href="{{ url_for('profile') }}" class="premium-menu-item">
+                                        <i class="fas fa-user mr-3 text-primary-500"></i>Profile
+                                    </a>
+                                    <a href="#" class="premium-menu-item" onclick="showAchievements()">
+                                        <i class="fas fa-trophy mr-3 text-amber-500"></i>Achievements
+                                    </a>
+                                    <a href="#" class="premium-menu-item" onclick="showLeaderboard()">
+                                        <i class="fas fa-crown mr-3 text-accent-500"></i>Leaderboard
+                                    </a>
+                                    <div class="border-t border-white/20 my-2"></div>
+                                    <a href="{{ url_for('logout') }}" class="premium-menu-item text-red-600 hover:bg-red-50">
+                                        <i class="fas fa-sign-out-alt mr-3"></i>Sign Out
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        
+        <!-- Enhanced Welcome Header with Gamification -->
+        <div class="mb-8 animate-fade-in">
+            <div class="premium-card-3d bg-gradient-to-r from-primary-500 via-accent-500 to-primary-600 rounded-3xl p-8 text-white relative overflow-hidden">
+                <!-- Enhanced Background Decorations -->
+                <div class="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -mr-48 -mt-48 animate-float"></div>
+                <div class="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full -ml-32 -mb-32 animate-float-delayed"></div>
+                <div class="absolute top-1/2 right-1/4 w-32 h-32 bg-white/10 rounded-full animate-pulse"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <h1 class="text-3xl lg:text-4xl font-bold">
+                                    Welcome back, {{ user.username }}! 
+                                </h1>
+                                <div class="flex space-x-1">
+                                    <span class="text-2xl animate-bounce" style="animation-delay: 0s;">🎓</span>
+                                    <span class="text-2xl animate-bounce" style="animation-delay: 0.2s;">✨</span>
+                                    <span class="text-2xl animate-bounce" style="animation-delay: 0.4s;">🚀</span>
+                                </div>
+                            </div>
+                            <p class="text-primary-100 text-lg mb-6">
+                                Ready to level up your knowledge? Let's achieve greatness together and unlock new achievements!
+                            </p>
+                            
+                            <!-- Gamification Status -->
+                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                                <div class="glass-card-mini text-center p-3">
+                                    <div class="text-2xl font-bold text-yellow-300">{{ student_points or 0 }}</div>
+                                    <div class="text-xs text-primary-100">Total XP</div>
+                                </div>
+                                <div class="glass-card-mini text-center p-3">
+                                    <div class="text-2xl font-bold text-green-300">{{ completed_count or 0 }}</div>
+                                    <div class="text-xs text-primary-100">Completed</div>
+                                </div>
+                                <div class="glass-card-mini text-center p-3">
+                                    <div class="text-2xl font-bold text-blue-300">{{ avg_score or 0 }}%</div>
+                                    <div class="text-xs text-primary-100">Avg Score</div>
+                                </div>
+                                <div class="glass-card-mini text-center p-3">
+                                    <div class="text-2xl font-bold text-purple-300">#{{ student_rank or 'N/A' }}</div>
+                                    <div class="text-xs text-primary-100">Rank</div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-6 text-sm">
+                                <div class="flex items-center">
+                                    <i class="fas fa-calendar mr-2"></i>
+                                    <span>{{ now.strftime('%B %d, %Y') }}</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-clock mr-2"></i>
+                                    <span id="current-time">{{ now.strftime('%I:%M %p') }}</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-fire mr-2 text-orange-300"></i>
+                                    <span>{{ study_streak or 0 }} day streak</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Enhanced Progress Ring -->
+                        <div class="mt-6 lg:mt-0 lg:ml-8">
+                            <div class="glass-card-mini p-6 text-center">
+                                <div class="relative w-24 h-24 mx-auto mb-3">
+                                    <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                                        <path class="text-white/20" stroke="currentColor" stroke-width="2" fill="transparent"
+                                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                        <path class="text-yellow-300" stroke="currentColor" stroke-width="2" fill="transparent"
+                                              stroke-dasharray="{{ (avg_score or 0) }}, 100"
+                                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span class="text-2xl font-bold">{{ avg_score or 0 }}%</span>
+                                    </div>
+                                </div>
+                                <div class="text-primary-100 text-sm">Overall Performance</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Quick Stats with Gamification -->
+        <!-- Enhanced Statistics Cards with Modern Design -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 animate-slide-up">
+            <!-- Upcoming Exams - Enhanced with Progress Ring -->
+            <div class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-400 via-amber-500 to-yellow-500 p-6 shadow-2xl shadow-orange-200/50 transition-all duration-500 hover:scale-105 hover:shadow-3xl hover:shadow-orange-300/60">
+                <!-- Animated Background Pattern -->
+                <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+                <div class="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-white/5 transition-transform duration-700 group-hover:scale-125"></div>
+                <div class="absolute -bottom-10 -left-10 h-30 w-30 rounded-full bg-white/5 transition-transform duration-700 group-hover:scale-110"></div>
+                
+                <div class="relative z-10">
+                    <!-- Icon with Pulse Animation -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="relative">
+                            <div class="absolute inset-0 rounded-2xl bg-white/20 animate-ping"></div>
+                            <div class="relative w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30">
+                                <i class="fas fa-clock text-white text-2xl drop-shadow-lg"></i>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-4xl font-black text-white drop-shadow-lg mb-1">{{ upcoming_count or 0 }}</div>
+                            <div class="text-white/80 text-sm font-semibold">exams</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Title Section -->
+                    <div class="mb-4">
+                        <h3 class="text-xl font-bold text-white mb-2 drop-shadow-md">Upcoming Exams</h3>
+                        <p class="text-white/90 text-sm font-medium">Ready to conquer 🚀</p>
+                    </div>
+                    
+                    <!-- XP Reward Badge -->
+                    <div class="flex items-center justify-between">
+                        <div class="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-star text-yellow-200 text-sm"></i>
+                                <span class="text-white font-bold text-sm">+50 XP each</span>
+                            </div>
+                        </div>
+                        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
+                            <i class="fas fa-arrow-right text-white text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completed Exams - Enhanced with Achievement Style -->
+            <div class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 p-6 shadow-2xl shadow-emerald-200/50 transition-all duration-500 hover:scale-105 hover:shadow-3xl hover:shadow-emerald-300/60">
+                <!-- Animated Background Elements -->
+                <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+                <div class="absolute top-4 right-4 w-32 h-32 bg-white/5 rounded-full transition-transform duration-700 group-hover:scale-125"></div>
+                
+                <div class="relative z-10">
+                    <!-- Achievement Badge -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="relative">
+                            <div class="absolute inset-0 rounded-2xl bg-yellow-400/30 animate-pulse"></div>
+                            <div class="relative w-16 h-16 bg-gradient-to-r from-yellow-400/30 to-amber-400/30 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-yellow-300/50">
+                                <i class="fas fa-trophy text-yellow-200 text-2xl drop-shadow-lg"></i>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-4xl font-black text-white drop-shadow-lg mb-1">{{ completed_count or 0 }}</div>
+                            <div class="text-white/80 text-sm font-semibold">conquered</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Title Section -->
+                    <div class="mb-4">
+                        <h3 class="text-xl font-bold text-white mb-2 drop-shadow-md">Completed</h3>
+                        <p class="text-white/90 text-sm font-medium">Exams conquered 🏆</p>
+                    </div>
+                    
+                    <!-- XP Earned Display -->
+                    <div class="flex items-center justify-between">
+                        <div class="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-coins text-yellow-200 text-sm"></i>
+                                <span class="text-white font-bold text-sm">{{ (completed_count or 0) * 50 }} XP earned</span>
+                            </div>
+                        </div>
+                        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                            <i class="fas fa-check text-white text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average Score - Enhanced with Progress Circle -->
+            <div class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 p-6 shadow-2xl shadow-blue-200/50 transition-all duration-500 hover:scale-105 hover:shadow-3xl hover:shadow-blue-300/60">
+                <!-- Background Patterns -->
+                <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+                <div class="absolute -top-16 -right-16 h-32 w-32 rounded-full bg-white/5 transition-transform duration-700 group-hover:rotate-45"></div>
+                
+                <div class="relative z-10">
+                    <!-- Score Display with Circular Progress -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="relative w-16 h-16">
+                            <!-- Progress Circle Background -->
+                            <svg class="w-16 h-16 transform -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.2)" stroke-width="8" fill="none"/>
+                                <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.8)" stroke-width="8" fill="none"
+                                        stroke-dasharray="{{ (avg_score or 0) * 2.51 }} 251.2" 
+                                        stroke-linecap="round" class="transition-all duration-1000 ease-out"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <i class="fas fa-chart-line text-white text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-4xl font-black text-white drop-shadow-lg mb-1">{{ avg_score or 0 }}%</div>
+                            <div class="text-white/80 text-sm font-semibold">average</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Title Section -->
+                    <div class="mb-4">
+                        <h3 class="text-xl font-bold text-white mb-2 drop-shadow-md">Average Score</h3>
+                        <p class="text-white/90 text-sm font-medium">Performance level 📊</p>
+                    </div>
+                    
+                    <!-- Performance Badge -->
+                    <div class="flex items-center justify-between">
+                        <div class="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
+                            <div class="flex items-center space-x-2">
+                                {% if avg_score >= 80 %}
+                                    <i class="fas fa-star text-yellow-200 text-sm"></i>
+                                    <span class="text-white font-bold text-sm">Excellent</span>
+                                {% elif avg_score >= 60 %}
+                                    <i class="fas fa-thumbs-up text-green-200 text-sm"></i>
+                                    <span class="text-white font-bold text-sm">Good</span>
+                                {% else %}
+                                    <i class="fas fa-trending-up text-blue-200 text-sm"></i>
+                                    <span class="text-white font-bold text-sm">Improving</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                            <i class="fas fa-arrow-up text-white text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Study Streak - Enhanced with Fire Animation -->
+            <div class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-red-500 via-pink-500 to-rose-600 p-6 shadow-2xl shadow-red-200/50 transition-all duration-500 hover:scale-105 hover:shadow-3xl hover:shadow-red-300/60">
+                <!-- Animated Background -->
+                <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+                <div class="absolute -bottom-20 -left-20 h-40 w-40 rounded-full bg-white/5 transition-transform duration-700 group-hover:scale-150"></div>
+                
+                <div class="relative z-10">
+                    <!-- Streak Counter with Fire Effect -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="relative">
+                            <div class="absolute inset-0 rounded-2xl bg-orange-400/30 animate-pulse"></div>
+                            <div class="relative w-16 h-16 bg-gradient-to-r from-orange-400/30 to-red-400/30 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-orange-300/50">
+                                <i class="fas fa-fire text-orange-200 text-2xl drop-shadow-lg {% if study_streak >= 3 %}animate-bounce{% endif %}"></i>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-4xl font-black text-white drop-shadow-lg mb-1">{{ study_streak or 0 }}</div>
+                            <div class="text-white/80 text-sm font-semibold">days</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Title Section -->
+                    <div class="mb-4">
+                        <h3 class="text-xl font-bold text-white mb-2 drop-shadow-md">Study Streak</h3>
+                        <p class="text-white/90 text-sm font-medium">Days active 🔥</p>
+                    </div>
+                    
+                    <!-- Motivation Badge -->
+                    <div class="flex items-center justify-between">
+                        <div class="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
+                            <div class="flex items-center space-x-2">
+                                {% if study_streak >= 7 %}
+                                    <i class="fas fa-fire text-orange-200 text-sm"></i>
+                                    <span class="text-white font-bold text-sm">On fire! 🔥</span>
+                                {% elif study_streak >= 3 %}
+                                    <i class="fas fa-rocket text-yellow-200 text-sm"></i>
+                                    <span class="text-white font-bold text-sm">Great momentum</span>
+                                {% else %}
+                                    <i class="fas fa-heart text-pink-200 text-sm"></i>
+                                    <span class="text-white font-bold text-sm">Keep going</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                            <i class="fas fa-flame text-white text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global Rank - Enhanced with Crown and Leaderboard Style -->
+            <div class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-500 via-violet-600 to-indigo-700 p-6 shadow-2xl shadow-purple-200/50 transition-all duration-500 hover:scale-105 hover:shadow-3xl hover:shadow-purple-300/60">
+                <!-- Royal Background Elements -->
+                <div class="absolute inset-0 bg-gradient-to-br from-yellow-400/5 to-transparent"></div>
+                <div class="absolute top-0 right-0 w-24 h-24 bg-yellow-400/10 rounded-full transition-transform duration-700 group-hover:scale-125"></div>
+                <div class="absolute -bottom-12 -right-12 w-24 h-24 bg-yellow-400/5 rounded-full transition-transform duration-700 group-hover:rotate-45"></div>
+                
+                <div class="relative z-10">
+                    <!-- Rank Display with Crown -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="relative">
+                            <div class="absolute inset-0 rounded-2xl bg-yellow-400/30 animate-pulse"></div>
+                            <div class="relative w-16 h-16 bg-gradient-to-r from-yellow-400/30 to-amber-500/30 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-yellow-300/50">
+                                <i class="fas fa-crown text-yellow-200 text-2xl drop-shadow-lg {% if student_rank and student_rank <= 10 %}animate-pulse{% endif %}"></i>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-4xl font-black text-white drop-shadow-lg mb-1">#{{ student_rank or '?' }}</div>
+                            <div class="text-white/80 text-sm font-semibold">rank</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Title Section -->
+                    <div class="mb-4">
+                        <h3 class="text-xl font-bold text-white mb-2 drop-shadow-md">Global Rank</h3>
+                        <p class="text-white/90 text-sm font-medium">Among all students 👑</p>
+                    </div>
+                    
+                    <!-- Achievement Level Badge -->
+                    <div class="flex items-center justify-between">
+                        <div class="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
+                            <div class="flex items-center space-x-2">
+                                {% if student_rank and student_rank <= 10 %}
+                                    <i class="fas fa-medal text-yellow-200 text-sm"></i>
+                                    <span class="text-white font-bold text-sm">Top 10! 🥇</span>
+                                {% elif student_rank and student_rank <= 50 %}
+                                    <i class="fas fa-award text-silver-200 text-sm"></i>
+                                    <span class="text-white font-bold text-sm">Top 50 🥈</span>
+                                {% else %}
+                                    <i class="fas fa-star text-bronze-200 text-sm"></i>
+                                    <span class="text-white font-bold text-sm">Rising star ⭐</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                            <i class="fas fa-users text-white text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gamification Dashboard -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 animate-slide-up" style="animation-delay: 0.2s;">
+            
+            <!-- Recent Achievements -->
+            <div class="premium-card-3d">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-secondary-900 flex items-center">
+                        <i class="fas fa-trophy mr-3 text-amber-500"></i>
+                        Recent Achievements
+                    </h3>
+                    <button class="text-primary-600 hover:text-primary-700 text-sm font-medium" onclick="showAllAchievements()">
+                        View All
+                    </button>
+                </div>
+                
+                <div class="space-y-3">
+                    {% if student_achievements %}
+                        {% for achievement in student_achievements[:3] %}
+                        <div class="flex items-center space-x-3 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-200">
+                            <div class="w-10 h-10 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full flex items-center justify-center">
+                                <i class="fas fa-{{ achievement.icon }} text-white text-sm"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-amber-800 text-sm">{{ achievement.title }}</h4>
+                                <p class="text-amber-600 text-xs">{{ achievement.description }}</p>
+                            </div>
+                            <div class="text-amber-600 text-xs">+{{ achievement.points }} XP</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-6">
+                        <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-trophy text-amber-400 text-2xl"></i>
+                        </div>
+                        <p class="text-secondary-600 text-sm">Complete exams to earn achievements!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Top Performers Leaderboard -->
+            <div class="premium-card-3d">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-secondary-900 flex items-center">
+                        <i class="fas fa-crown mr-3 text-purple-500"></i>
+                        Leaderboard
+                    </h3>
+                    <button class="text-primary-600 hover:text-primary-700 text-sm font-medium" onclick="showFullLeaderboard()">
+                        View Full
+                    </button>
+                </div>
+                
+                <div class="space-y-2">
+                    {% if leaderboard %}
+                        {% for rank, student in leaderboard[:5] %}
+                        <div class="flex items-center space-x-3 p-3 {% if student.id == user.id %}bg-gradient-to-r from-primary-50 to-accent-50 border border-primary-200{% else %}bg-gray-50{% endif %} rounded-xl">
+                            <div class="w-8 h-8 {% if rank == 1 %}bg-gradient-to-r from-yellow-400 to-yellow-500{% elif rank == 2 %}bg-gradient-to-r from-gray-400 to-gray-500{% elif rank == 3 %}bg-gradient-to-r from-amber-600 to-amber-700{% else %}bg-gradient-to-r from-gray-300 to-gray-400{% endif %} rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                {{ rank }}
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-secondary-900 text-sm">{{ student.username }}</p>
+                                <p class="text-secondary-600 text-xs">{{ student.total_points or 0 }} XP</p>
+                            </div>
+                            {% if rank <= 3 %}
+                                <i class="fas fa-crown text-{{ 'yellow' if rank == 1 else 'gray' if rank == 2 else 'amber' }}-500"></i>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-6">
+                        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-crown text-purple-400 text-2xl"></i>
+                        </div>
+                        <p class="text-secondary-600 text-sm">Leaderboard will appear after more students join!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Active Challenges -->
+            <div class="premium-card-3d">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-secondary-900 flex items-center">
+                        <i class="fas fa-flag mr-3 text-green-500"></i>
+                        Active Challenges
+                    </h3>
+                    <button class="text-primary-600 hover:text-primary-700 text-sm font-medium" onclick="showAllChallenges()">
+                        View All
+                    </button>
+                </div>
+                
+                <div class="space-y-3">
+                    {% if student_challenges %}
+                        {% for challenge in student_challenges[:3] %}
+                        <div class="border border-green-200 rounded-xl p-3 bg-gradient-to-r from-green-50 to-emerald-50">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-semibold text-green-800 text-sm">{{ challenge.title }}</h4>
+                                <span class="text-green-600 text-xs font-medium">+{{ challenge.reward_points }} XP</span>
+                            </div>
+                            <p class="text-green-600 text-xs mb-3">{{ challenge.description }}</p>
+                            <div class="w-full bg-green-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-green-400 to-green-500 h-2 rounded-full" 
+                                     style="width: {{ (challenge.current_progress / challenge.target_value * 100) if challenge.target_value > 0 else 0 }}%"></div>
+                            </div>
+                            <div class="flex justify-between items-center mt-2 text-xs text-green-600">
+                                <span>{{ challenge.current_progress }}/{{ challenge.target_value }}</span>
+                                <span>{{ ((challenge.current_progress / challenge.target_value * 100) if challenge.target_value > 0 else 0)|round }}%</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-6">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-flag text-green-400 text-2xl"></i>
+                        </div>
+                        <p class="text-secondary-600 text-sm">New challenges coming soon!</p>
+                        <button class="btn-secondary mt-3 text-sm" onclick="refreshChallenges()">
+                            Check for Updates
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Column - Available Exams -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- Enhanced Available Exams -->
+                <div class="premium-card-3d animate-slide-up">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-secondary-900 flex items-center">
+                            <i class="fas fa-clipboard-list mr-3 text-primary-500"></i>
+                            Available Exams
+                        </h2>
+                        <a href="{{ url_for('exam_schedule') }}" class="premium-btn-ghost text-sm">
+                            View All <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+
+                    {% if available_exams %}
+                        <div class="space-y-4">
+                            {% for exam in available_exams %}
+                            <div class="premium-exam-card border border-gray-200 rounded-2xl p-6 hover:border-primary-300 hover:shadow-xl transition-all hover-lift bg-gradient-to-r from-white to-gray-50">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-3 mb-3">
+                                            <h3 class="font-bold text-secondary-900 text-lg">{{ exam.title }}</h3>
+                                            {% if exam.is_scheduled %}
+                                                {% if exam.scheduled_start and now < exam.scheduled_start %}
+                                                    <div class="px-3 py-1 bg-gradient-to-r from-warning-100 to-warning-200 text-warning-700 rounded-full text-xs font-medium">
+                                                        <i class="fas fa-clock mr-1"></i>Scheduled
+                                                    </div>
+                                                {% elif exam.scheduled_end and now > exam.scheduled_end %}
+                                                    <div class="px-3 py-1 bg-gradient-to-r from-danger-100 to-danger-200 text-danger-700 rounded-full text-xs font-medium">
+                                                        <i class="fas fa-times-circle mr-1"></i>Expired
+                                                    </div>
+                                                {% else %}
+                                                    <div class="px-3 py-1 bg-gradient-to-r from-success-100 to-success-200 text-success-700 rounded-full text-xs font-medium">
+                                                        <i class="fas fa-check-circle mr-1"></i>Available
+                                                    </div>
+                                                {% endif %}
+                                            {% else %}
+                                                <div class="px-3 py-1 bg-gradient-to-r from-primary-100 to-accent-100 text-primary-700 rounded-full text-xs font-medium">
+                                                    Available Now
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        {% if exam.is_scheduled and exam.scheduled_start and exam.scheduled_end %}
+                                        <div class="bg-gradient-to-r from-primary-50 to-accent-50 rounded-lg p-3 mb-4 border border-primary-200">
+                                            <div class="flex items-center space-x-2 mb-2">
+                                                <i class="fas fa-calendar-clock text-primary-500"></i>
+                                                <span class="text-sm font-semibold text-primary-700">Exam Schedule</span>
+                                            </div>
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-primary-600">
+                                                <div class="flex items-center">
+                                                    <i class="fas fa-play-circle mr-1 text-success-500"></i>
+                                                    <span>Starts: {{ exam.scheduled_start.strftime('%b %d, %I:%M %p') }}</span>
+                                                </div>
+                                                <div class="flex items-center">
+                                                    <i class="fas fa-stop-circle mr-1 text-danger-500"></i>
+                                                    <span>Ends: {{ exam.scheduled_end.strftime('%b %d, %I:%M %p') }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-secondary-600 mb-4">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-questions mr-2 text-primary-400"></i>
+                                                <span>{{ exam.questions|length }} Questions</span>
+                                            </div>
+                                            <div class="flex items-center">
+                                                <i class="fas fa-clock mr-2 text-accent-400"></i>
+                                                <span>~{{ (exam.questions|length * 2) }} min</span>
+                                            </div>
+                                            <div class="flex items-center">
+                                                <i class="fas fa-calendar mr-2 text-success-400"></i>
+                                                <span>{{ exam.created_at.strftime('%b %d') }}</span>
+                                            </div>
+                                            <div class="flex items-center">
+                                                <i class="fas fa-coins mr-2 text-amber-400"></i>
+                                                <span>+{{ (exam.questions|length * 5) }} XP</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Enhanced Difficulty Indicator -->
+                                        <div class="flex items-center space-x-3 mb-4">
+                                            <span class="text-sm font-medium text-secondary-600">Difficulty:</span>
+                                            <div class="flex space-x-1">
+                                                {% set difficulty = (exam.questions|length // 10) + 1 %}
+                                                {% for i in range(1, 6) %}
+                                                    <div class="w-3 h-3 rounded-full {{ 'bg-gradient-to-r from-primary-400 to-primary-500' if i <= difficulty else 'bg-gray-200' }} shadow-sm"></div>
+                                                {% endfor %}
+                                            </div>
+                                            <span class="text-sm font-medium {{ 'text-green-600' if difficulty <= 2 else 'text-yellow-600' if difficulty <= 3 else 'text-red-600' }}">
+                                                {% if difficulty <= 2 %}Easy{% elif difficulty <= 3 %}Medium{% else %}Hard{% endif %}
+                                            </span>
+                                        </div>
+
+                                        <!-- Potential Rewards -->
+                                        <div class="bg-gradient-to-r from-accent-50 to-primary-50 rounded-xl p-3 border border-accent-200">
+                                            <div class="flex items-center justify-between text-sm">
+                                                <div class="flex items-center space-x-4">
+                                                    <div class="flex items-center">
+                                                        <i class="fas fa-star text-amber-400 mr-1"></i>
+                                                        <span class="text-amber-600 font-medium">Max: {{ (exam.questions|length * 5) }} XP</span>
+                                                    </div>
+                                                    <div class="flex items-center">
+                                                        <i class="fas fa-trophy text-purple-400 mr-1"></i>
+                                                        <span class="text-purple-600 font-medium">Achievement unlock</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex flex-col items-end space-y-3 ml-6">
+                                        <a href="{{ url_for('take_exam', exam_id=exam.id) }}" 
+                                           class="premium-btn-primary text-sm px-6 py-3 flex items-center space-x-2">
+                                            <i class="fas fa-play"></i>
+                                            <span>Start Exam</span>
+                                        </a>
+                                        <button class="premium-btn-ghost text-sm px-4 py-2" onclick="showExamPreview('{{ exam.id }}')">
+                                            <i class="fas fa-eye mr-1"></i>Preview
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-16">
+                            <div class="w-24 h-24 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                                <i class="fas fa-clipboard-list text-gray-400 text-3xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-secondary-700 mb-2">No Exams Available</h3>
+                            <p class="text-secondary-500 mb-6">Check back later for new assessments and challenges.</p>
+                            <button class="premium-btn-secondary" onclick="location.reload()">
+                                <i class="fas fa-refresh mr-2"></i>Refresh Page
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Available Courses Section -->
+                <div class="premium-card-3d animate-slide-up" style="animation-delay: 0.1s;">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-secondary-900 flex items-center">
+                            <i class="fas fa-graduation-cap mr-3 text-accent-500"></i>
+                            Available Courses
+                        </h2>
+                        <a href="{{ url_for('courses') }}" class="premium-btn-ghost text-sm">
+                            Browse All <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+
+                    {% if available_courses %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {% for course in available_courses %}
+                            <div class="premium-course-card border border-gray-200 rounded-2xl p-5 hover:border-accent-300 hover:shadow-xl transition-all hover-lift bg-gradient-to-br from-white to-accent-50/30">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div class="flex-1">
+                                        <h3 class="font-bold text-secondary-900 mb-2 line-clamp-2">{{ course.title }}</h3>
+                                        <p class="text-sm text-secondary-600 mb-3 line-clamp-2">{{ course.description }}</p>
+                                        
+                                        <!-- Course Stats -->
+                                        <div class="flex items-center space-x-4 text-xs text-secondary-500 mb-3">
+                                            <span class="flex items-center">
+                                                <i class="fas fa-clock mr-1 text-accent-500"></i>
+                                                {{ course.estimated_duration_hours }}h
+                                            </span>
+                                            <span class="flex items-center">
+                                                <i class="fas fa-signal mr-1 text-primary-500"></i>
+                                                {{ course.difficulty_level.title() }}
+                                            </span>
+                                            <span class="flex items-center">
+                                                <i class="fas fa-users mr-1 text-success-500"></i>
+                                                {{ course.enrollment_count }}
+                                            </span>
+                                        </div>
+
+                                        <!-- Course Category -->
+                                        <div class="flex items-center justify-between">
+                                            <span class="px-2 py-1 bg-gradient-to-r from-accent-100 to-primary-100 text-accent-700 rounded-full text-xs font-medium">
+                                                {{ course.category }}
+                                            </span>
+                                            {% if course.rating > 0 %}
+                                            <div class="flex items-center">
+                                                <i class="fas fa-star text-amber-400 mr-1"></i>
+                                                <span class="text-xs text-amber-600 font-medium">{{ "%.1f"|format(course.rating) }}</span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Enrollment Action -->
+                                <div class="flex space-x-2">
+                                    {% set is_enrolled = course.id in enrolled_courses|map(attribute='Course.id')|list %}
+                                    {% if is_enrolled %}
+                                        {% set enrollment = enrolled_courses|selectattr('Course.id', 'equalto', course.id)|first %}
+                                        <a href="{{ url_for('course_view', course_id=course.id) }}" 
+                                           class="flex-1 premium-btn-success text-sm px-4 py-2 text-center">
+                                            <i class="fas fa-play mr-1"></i>Continue Learning
+                                        </a>
+                                        <button class="premium-btn-ghost text-xs px-3 py-2" 
+                                                onclick="showEnrollmentDetails('{{ enrollment.CourseEnrollment.enrollment_number }}', '{{ course.title }}', '{{ enrollment.CourseEnrollment.enrolled_at.strftime('%Y-%m-%d') }}')">
+                                            <i class="fas fa-id-card"></i>
+                                        </button>
+                                    {% else %}
+                                        <button onclick="enrollInCourse({{ course.id }}, '{{ course.title }}')" 
+                                                class="flex-1 premium-btn-primary text-sm px-4 py-2">
+                                            <i class="fas fa-plus mr-1"></i>Enroll Now
+                                        </button>
+                                        <a href="{{ url_for('course_view', course_id=course.id) }}" 
+                                           class="premium-btn-ghost text-sm px-3 py-2">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-16">
+                            <div class="w-24 h-24 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                                <i class="fas fa-graduation-cap text-gray-400 text-3xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-secondary-700 mb-2">No Courses Available</h3>
+                            <p class="text-secondary-500 mb-6">New courses will be available soon. Check back later!</p>
+                            <a href="{{ url_for('courses') }}" class="premium-btn-secondary">
+                                <i class="fas fa-search mr-2"></i>Browse All Courses
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Enhanced Recent Activity -->
+                <div class="premium-card-3d animate-slide-up" style="animation-delay: 0.2s;">
+                    <h2 class="text-xl font-bold text-secondary-900 flex items-center mb-6">
+                        <i class="fas fa-history mr-3 text-accent-500"></i>
+                        Recent Activity
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        {% if recent_activities %}
+                            {% for activity in recent_activities %}
+                            <div class="flex items-center space-x-4 p-4 bg-gradient-to-r from-{{ activity.color }}-50 to-{{ activity.color }}-100 rounded-xl border border-{{ activity.color }}-200">
+                                <div class="w-12 h-12 bg-gradient-to-r from-{{ activity.color }}-400 to-{{ activity.color }}-500 rounded-full flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-{{ activity.icon }} text-white"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold text-{{ activity.color }}-800">{{ activity.title }}</p>
+                                    <p class="text-{{ activity.color }}-600 text-sm">{{ activity.description }}</p>
+                                </div>
+                                <div class="text-{{ activity.color }}-600 text-xs font-medium">
+                                    {{ activity.time_ago }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                        <div class="flex items-center space-x-4 p-4 bg-gradient-to-r from-success-50 to-emerald-50 rounded-xl border border-success-200">
+                            <div class="w-12 h-12 bg-gradient-to-r from-success-400 to-success-500 rounded-full flex items-center justify-center shadow-lg">
+                                <i class="fas fa-check text-white"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-success-800">Welcome to QUIZZO!</p>
+                                <p class="text-success-600 text-sm">Start taking exams to see your activity here.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4 p-4 bg-gradient-to-r from-primary-50 to-accent-50 rounded-xl border border-primary-200">
+                            <div class="w-12 h-12 bg-gradient-to-r from-primary-400 to-primary-500 rounded-full flex items-center justify-center shadow-lg">
+                                <i class="fas fa-star text-white"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-primary-800">First Steps</p>
+                                <p class="text-primary-600 text-sm">Complete your first exam to earn achievements!</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Right Column - Quick Actions & Stats -->
+            <div class="space-y-6">
+                
+                <!-- Revolutionary Quick Actions with Modern UI -->
+                <div class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6 shadow-2xl shadow-indigo-200/30 border border-white/60 animate-slide-up hover:scale-[1.02] transition-all duration-700" style="animation-delay: 0.1s;">
+                    <!-- Animated Background Elements -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent"></div>
+                    <div class="absolute -top-16 -right-16 w-32 h-32 bg-gradient-to-br from-indigo-400/20 to-purple-400/20 rounded-full blur-xl animate-pulse"></div>
+                    <div class="absolute -bottom-8 -left-8 w-24 h-24 bg-gradient-to-br from-pink-400/20 to-orange-400/20 rounded-full blur-lg animate-pulse" style="animation-delay: 1s;"></div>
+                    
+                    <div class="relative z-10">
+                        <!-- Header with Animated Icon -->
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center space-x-3">
+                                <div class="relative">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl blur-md opacity-75 animate-pulse"></div>
+                                    <div class="relative w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-500">
+                                        <i class="fas fa-bolt text-white text-xl drop-shadow-lg"></i>
+                                    </div>
+                                </div>
+                                <h2 class="text-xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Quick Actions</h2>
+                            </div>
+                            <div class="w-8 h-8 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/40 group-hover:rotate-180 transition-transform duration-700">
+                                <i class="fas fa-magic text-indigo-500 text-sm"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- Enhanced Action Cards with 3D Effect -->
+                        <div class="space-y-3">
+                            <a href="{{ url_for('exam_schedule') }}" 
+                               class="group/item relative block p-4 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/50 hover:bg-white/90 hover:border-indigo-300/50 hover:shadow-2xl hover:shadow-indigo-200/40 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="relative">
+                                            <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200/50 group-hover/item:shadow-blue-300/70 transition-all duration-300">
+                                                <i class="fas fa-calendar-alt text-white text-lg"></i>
+                                            </div>
+                                            <div class="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center">
+                                                <span class="text-white text-xs font-bold">{{ upcoming_count or 0 }}</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-gray-800 text-base group-hover/item:text-indigo-600 transition-colors">View Schedule</div>
+                                            <div class="text-gray-600 text-sm">Upcoming exams & deadlines</div>
+                                        </div>
+                                    </div>
+                                    <div class="w-8 h-8 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center group-hover/item:translate-x-1 group-hover/item:bg-gradient-to-r group-hover/item:from-blue-200 group-hover/item:to-indigo-200 transition-all duration-300">
+                                        <i class="fas fa-arrow-right text-indigo-500 text-sm"></i>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="{{ url_for('my_results') }}" 
+                               class="group/item relative block p-4 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/50 hover:bg-white/90 hover:border-emerald-300/50 hover:shadow-2xl hover:shadow-emerald-200/40 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="relative">
+                                            <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200/50 group-hover/item:shadow-emerald-300/70 transition-all duration-300">
+                                                <i class="fas fa-chart-line text-white text-lg"></i>
+                                            </div>
+                                            <div class="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full flex items-center justify-center">
+                                                <span class="text-white text-xs font-bold">{{ avg_score or 0 }}%</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-gray-800 text-base group-hover/item:text-emerald-600 transition-colors">My Results</div>
+                                            <div class="text-gray-600 text-sm">Performance analytics</div>
+                                        </div>
+                                    </div>
+                                    <div class="w-8 h-8 bg-gradient-to-r from-emerald-100 to-green-100 rounded-lg flex items-center justify-center group-hover/item:translate-x-1 group-hover/item:bg-gradient-to-r group-hover/item:from-emerald-200 group-hover/item:to-green-200 transition-all duration-300">
+                                        <i class="fas fa-arrow-right text-emerald-500 text-sm"></i>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="{{ url_for('student_progress') }}" 
+                               class="group/item relative block p-4 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/50 hover:bg-white/90 hover:border-amber-300/50 hover:shadow-2xl hover:shadow-amber-200/40 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="relative">
+                                            <div class="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-200/50 group-hover/item:shadow-amber-300/70 transition-all duration-300">
+                                                <i class="fas fa-trophy text-white text-lg"></i>
+                                            </div>
+                                            <div class="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center animate-bounce">
+                                                <i class="fas fa-star text-white text-xs"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-gray-800 text-base group-hover/item:text-amber-600 transition-colors">Progress Report</div>
+                                            <div class="text-gray-600 text-sm">Achievements & milestones</div>
+                                        </div>
+                                    </div>
+                                    <div class="w-8 h-8 bg-gradient-to-r from-amber-100 to-orange-100 rounded-lg flex items-center justify-center group-hover/item:translate-x-1 group-hover/item:bg-gradient-to-r group-hover/item:from-amber-200 group-hover/item:to-orange-200 transition-all duration-300">
+                                        <i class="fas fa-arrow-right text-amber-500 text-sm"></i>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <!-- Quizzo Bot AI Assistant -->
+                            <a href="{{ url_for('quizzo_bot') }}" 
+                               class="group/item relative block p-4 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/50 hover:bg-white/90 hover:border-purple-300/50 hover:shadow-2xl hover:shadow-purple-200/40 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="relative">
+                                            <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-200/50 group-hover/item:shadow-purple-300/70 transition-all duration-300">
+                                                <i class="fas fa-robot text-white text-lg"></i>
+                                            </div>
+                                            <div class="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full flex items-center justify-center animate-pulse">
+                                                <i class="fas fa-brain text-white text-xs"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-gray-800 text-base group-hover/item:text-purple-600 transition-colors">Quizzo Bot</div>
+                                            <div class="text-gray-600 text-sm">AI assistant & study help</div>
+                                        </div>
+                                    </div>
+                                    <div class="w-8 h-8 bg-gradient-to-r from-purple-100 to-violet-100 rounded-lg flex items-center justify-center group-hover/item:translate-x-1 group-hover/item:bg-gradient-to-r group-hover/item:from-purple-200 group-hover/item:to-violet-200 transition-all duration-300">
+                                        <i class="fas fa-arrow-right text-purple-500 text-sm"></i>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="{{ url_for('profile') }}" 
+                               class="group/item relative block p-4 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/50 hover:bg-white/90 hover:border-slate-300/50 hover:shadow-2xl hover:shadow-slate-200/40 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-slate-400 to-gray-500 rounded-xl flex items-center justify-center shadow-lg shadow-slate-200/50 group-hover/item:shadow-slate-300/70 transition-all duration-300">
+                                            <i class="fas fa-user text-white text-lg"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-gray-800 text-base group-hover/item:text-slate-600 transition-colors">Profile Settings</div>
+                                            <div class="text-gray-600 text-sm">Customize your account</div>
+                                        </div>
+                                    </div>
+                                    <div class="w-8 h-8 bg-gradient-to-r from-slate-100 to-gray-100 rounded-lg flex items-center justify-center group-hover/item:translate-x-1 group-hover/item:bg-gradient-to-r group-hover/item:from-slate-200 group-hover/item:to-gray-200 transition-all duration-300">
+                                        <i class="fas fa-arrow-right text-slate-500 text-sm"></i>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revolutionary Virtual Classroom with Immersive Design -->
+                <div class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-6 shadow-2xl shadow-purple-900/30 border border-purple-700/30 animate-slide-up hover:scale-[1.02] transition-all duration-700" style="animation-delay: 0.2s;">
+                    <!-- Cosmic Background Effect -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-transparent"></div>
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-400/10 via-purple-400/10 to-pink-400/10 rounded-full blur-3xl animate-pulse"></div>
+                    <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-gradient-to-br from-indigo-400/10 via-purple-400/10 to-cyan-400/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+                    
+                    <!-- Floating Particles -->
+                    <div class="absolute top-8 left-8 w-2 h-2 bg-blue-400 rounded-full animate-ping opacity-70"></div>
+                    <div class="absolute top-16 right-16 w-1 h-1 bg-purple-400 rounded-full animate-ping opacity-50" style="animation-delay: 1s;"></div>
+                    <div class="absolute bottom-12 left-12 w-1.5 h-1.5 bg-pink-400 rounded-full animate-ping opacity-60" style="animation-delay: 2s;"></div>
+                    
+                    <div class="relative z-10">
+                        <!-- Futuristic Header -->
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center space-x-3">
+                                <div class="relative">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-2xl blur-lg opacity-60 animate-pulse"></div>
+                                    <div class="relative w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center border border-cyan-300/30 transform group-hover:rotate-12 transition-transform duration-500">
+                                        <i class="fas fa-chalkboard-teacher text-white text-xl drop-shadow-lg"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-black text-white drop-shadow-lg">Virtual Classroom</h2>
+                                    <div class="text-cyan-200 text-sm font-medium">Immersive Learning</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                                <span class="text-green-200 text-sm font-medium">Live</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Interactive Learning Modules -->
+                        <div class="space-y-4">
+                            <div class="group/module relative p-5 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 hover:bg-white/15 hover:border-cyan-300/40 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
+                                <!-- Holographic Effect -->
+                                <div class="absolute inset-0 bg-gradient-to-r from-cyan-400/10 to-blue-400/10 rounded-2xl opacity-0 group-hover/module:opacity-100 transition-opacity duration-500"></div>
+                                
+                                <div class="relative z-10">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 bg-gradient-to-br from-red-400 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-red-200/30">
+                                                <i class="fas fa-video text-white"></i>
+                                            </div>
+                                            <div>
+                                                <h4 class="font-bold text-white text-base">Live Sessions</h4>
+                                                <p class="text-cyan-200 text-sm">Interactive real-time learning</p>
+                                            </div>
+                                        </div>
+                                        <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-users text-cyan-200 text-sm"></i>
+                                        </div>
+                                    </div>
+                                    <p class="text-blue-100 text-sm mb-4">Join interactive learning sessions with your instructor and classmates.</p>
+                                    <button class="w-full bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white py-3 px-4 rounded-xl font-bold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg shadow-red-500/30" onclick="joinVirtualClassroom()">
+                                        <i class="fas fa-play mr-2"></i>Join Session
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="group/module relative p-5 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 hover:bg-white/15 hover:border-emerald-300/40 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
+                                <!-- Holographic Effect -->
+                                <div class="absolute inset-0 bg-gradient-to-r from-emerald-400/10 to-green-400/10 rounded-2xl opacity-0 group-hover/module:opacity-100 transition-opacity duration-500"></div>
+                                
+                                <div class="relative z-10">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200/30">
+                                                <i class="fas fa-comments text-white"></i>
+                                            </div>
+                                            <div>
+                                                <h4 class="font-bold text-white text-base">Study Groups</h4>
+                                                <p class="text-cyan-200 text-sm">Collaborative learning</p>
+                                            </div>
+                                        </div>
+                                        <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                                            <span class="text-emerald-200 text-xs font-bold">{{ (completed_count or 0) + 2 }}</span>
+                                        </div>
+                                    </div>
+                                    <p class="text-blue-100 text-sm mb-4">Collaborate with classmates on challenging topics and group projects.</p>
+                                    <button class="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white py-3 px-4 rounded-xl font-bold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg shadow-emerald-500/30" onclick="browseStudyGroups()">
+                                        <i class="fas fa-users mr-2"></i>Browse Groups
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gamified Study Tips with Interactive Design -->
+                <div class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 p-6 shadow-2xl shadow-amber-200/30 border border-orange-200/50 animate-slide-up hover:scale-[1.02] transition-all duration-700" style="animation-delay: 0.3s;">
+                    <!-- Dynamic Background Pattern -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent"></div>
+                    <div class="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-orange-300/20 to-red-300/20 rounded-full blur-2xl animate-pulse"></div>
+                    <div class="absolute -bottom-16 -left-16 w-32 h-32 bg-gradient-to-br from-amber-300/20 to-yellow-300/20 rounded-full blur-xl animate-pulse" style="animation-delay: 1.5s;"></div>
+                    
+                    <div class="relative z-10">
+                        <!-- Energetic Header -->
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center space-x-3">
+                                <div class="relative">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl blur-md opacity-75 animate-pulse"></div>
+                                    <div class="relative w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-500">
+                                        <i class="fas fa-lightbulb text-white text-xl drop-shadow-lg"></i>
+                                    </div>
+                                </div>
+                                <h2 class="text-xl font-black bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Study Tips</h2>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <i class="fas fa-fire text-orange-500 text-lg animate-pulse"></i>
+                                <span class="text-orange-600 text-sm font-bold">Hot Tips</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Power-Up Study Cards -->
+                        <div class="space-y-3">
+                            <div class="group/tip relative p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 hover:bg-white/95 hover:border-blue-300/50 hover:shadow-xl hover:shadow-blue-200/30 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200/50 group-hover/tip:rotate-12 transition-transform duration-300">
+                                        <span class="text-white text-xl">📚</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-gray-800 text-base mb-1 group-hover/tip:text-blue-600 transition-colors">Smart Preparation</h4>
+                                        <p class="text-gray-600 text-sm leading-relaxed">Review materials systematically and take practice tests to boost confidence and retention.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="group/tip relative p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 hover:bg-white/95 hover:border-emerald-300/50 hover:shadow-xl hover:shadow-emerald-200/30 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200/50 group-hover/tip:rotate-12 transition-transform duration-300">
+                                        <span class="text-white text-xl">🎯</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-gray-800 text-base mb-1 group-hover/tip:text-emerald-600 transition-colors">Laser Focus</h4>
+                                        <p class="text-gray-600 text-sm leading-relaxed">Create a distraction-free environment and use the Pomodoro technique for maximum productivity.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="group/tip relative p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 hover:bg-white/95 hover:border-purple-300/50 hover:shadow-xl hover:shadow-purple-200/30 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-200/50 group-hover/tip:rotate-12 transition-transform duration-300">
+                                        <span class="text-white text-xl">⏰</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-gray-800 text-base mb-1 group-hover/tip:text-purple-600 transition-colors">Time Mastery</h4>
+                                        <p class="text-gray-600 text-sm leading-relaxed">Allocate time wisely and don't get stuck on difficult questions during exams.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="group/tip relative p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 hover:bg-white/95 hover:border-orange-300/50 hover:shadow-xl hover:shadow-orange-200/30 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-200/50 group-hover/tip:rotate-12 transition-transform duration-300">
+                                        <span class="text-white text-xl">💪</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-gray-800 text-base mb-1 group-hover/tip:text-orange-600 transition-colors">Stay Motivated</h4>
+                                        <p class="text-gray-600 text-sm leading-relaxed">Set goals, track progress, and celebrate your achievements to maintain momentum!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Performance Analytics with Data Visualization -->
+                <div class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-gray-900 to-zinc-900 p-6 shadow-2xl shadow-slate-900/40 border border-slate-700/30 animate-slide-up hover:scale-[1.02] transition-all duration-700" style="animation-delay: 0.4s;">
+                    <!-- Tech Grid Background -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-slate-600/10 to-transparent"></div>
+                    <div class="absolute inset-0 bg-grid-slate-700/20 bg-grid-pattern opacity-30"></div>
+                    
+                    <!-- Glowing Data Points -->
+                    <div class="absolute top-6 right-6 w-2 h-2 bg-cyan-400 rounded-full animate-ping opacity-70"></div>
+                    <div class="absolute top-12 right-12 w-1 h-1 bg-blue-400 rounded-full animate-ping opacity-50" style="animation-delay: 1s;"></div>
+                    <div class="absolute bottom-8 right-8 w-1.5 h-1.5 bg-indigo-400 rounded-full animate-ping opacity-60" style="animation-delay: 2s;"></div>
+                    
+                    <div class="relative z-10">
+                        <!-- Tech Header -->
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center space-x-3">
+                                <div class="relative">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-2xl blur-lg opacity-60 animate-pulse"></div>
+                                    <div class="relative w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center border border-cyan-300/30 transform group-hover:rotate-12 transition-transform duration-500">
+                                        <i class="fas fa-chart-area text-white text-xl drop-shadow-lg"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-black text-white drop-shadow-lg">Performance Analytics</h2>
+                                    <div class="text-cyan-200 text-sm font-medium">Real-time Insights</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                                <span class="text-green-200 text-sm font-medium">Live</span>
+                            </div>
+                        </div>
+                        
+                        {% if completed_count > 0 %}
+                        <div class="space-y-6">
+                            <!-- Futuristic Progress Visualization -->
+                            <div class="relative">
+                                <div class="flex items-center justify-center mb-4">
+                                    <div class="relative w-36 h-36">
+                                        <!-- Outer Glow Ring -->
+                                        <div class="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400/30 to-blue-500/30 blur-lg animate-pulse"></div>
+                                        
+                                        <!-- Progress Rings -->
+                                        <svg class="w-36 h-36 transform -rotate-90" viewBox="0 0 36 36">
+                                            <!-- Background Ring -->
+                                            <path class="text-slate-700" stroke="currentColor" stroke-width="2" fill="transparent"
+                                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                            <!-- Progress Ring -->
+                                            <path class="text-cyan-400" stroke="currentColor" stroke-width="2" fill="transparent"
+                                                  stroke-dasharray="{{ avg_score or 0 }}, 100"
+                                                  stroke-linecap="round"
+                                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                        </svg>
+                                        
+                                        <!-- Center Display -->
+                                        <div class="absolute inset-0 flex items-center justify-center">
+                                            <div class="text-center">
+                                                <div class="text-3xl font-black text-cyan-300 drop-shadow-lg">{{ avg_score or 0 }}%</div>
+                                                <div class="text-slate-300 text-xs font-semibold uppercase tracking-wider">Avg Score</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Enhanced Data Grid -->
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="relative group/metric p-4 bg-gradient-to-br from-emerald-500/20 to-green-500/20 backdrop-blur-sm rounded-2xl border border-emerald-400/30 hover:border-emerald-300/50 transition-all duration-300">
+                                    <div class="absolute inset-0 bg-gradient-to-br from-emerald-400/10 to-green-400/10 rounded-2xl opacity-0 group-hover/metric:opacity-100 transition-opacity duration-300"></div>
+                                    <div class="relative z-10 text-center">
+                                        <div class="text-2xl font-black text-emerald-300 mb-1">{{ completed_count }}</div>
+                                        <div class="text-emerald-200 text-xs font-semibold uppercase tracking-wider">Completed</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="relative group/metric p-4 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-2xl border border-blue-400/30 hover:border-blue-300/50 transition-all duration-300">
+                                    <div class="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 rounded-2xl opacity-0 group-hover/metric:opacity-100 transition-opacity duration-300"></div>
+                                    <div class="relative z-10 text-center">
+                                        <div class="text-2xl font-black text-blue-300 mb-1">{{ student_rank or 1 }}</div>
+                                        <div class="text-blue-200 text-xs font-semibold uppercase tracking-wider">Rank</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="relative group/metric p-4 bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-sm rounded-2xl border border-purple-400/30 hover:border-purple-300/50 transition-all duration-300">
+                                    <div class="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-pink-400/10 rounded-2xl opacity-0 group-hover/metric:opacity-100 transition-opacity duration-300"></div>
+                                    <div class="relative z-10 text-center">
+                                        <div class="text-2xl font-black text-purple-300 mb-1">{{ ((completed_count or 0) * 50) }}</div>
+                                        <div class="text-purple-200 text-xs font-semibold uppercase tracking-wider">XP</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Achievement Progress Bar -->
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-300 text-sm font-medium">Next Achievement</span>
+                                    <span class="text-cyan-300 text-sm font-bold">First Excellence</span>
+                                </div>
+                                <div class="relative">
+                                    <div class="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
+                                        <div class="bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-1000 ease-out shadow-lg shadow-cyan-400/30" 
+                                             style="width: {{ (avg_score or 0) if (avg_score or 0) <= 100 else 100 }}%"></div>
+                                    </div>
+                                    <div class="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-full blur-sm"></div>
+                                </div>
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-slate-400">{{ avg_score or 0 }}% progress</span>
+                                    <span class="text-cyan-300 font-semibold">{{ 100 - (avg_score or 0) }}% to unlock</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <!-- No Data State with Motivation -->
+                        <div class="text-center py-8">
+                            <div class="relative mb-6">
+                                <div class="w-24 h-24 bg-gradient-to-br from-cyan-400/20 to-blue-500/20 rounded-full flex items-center justify-center mx-auto border border-cyan-400/30">
+                                    <i class="fas fa-rocket text-cyan-300 text-3xl"></i>
+                                </div>
+                                <div class="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center animate-bounce">
+                                    <i class="fas fa-plus text-white text-sm"></i>
+                                </div>
+                            </div>
+                            <h4 class="text-white font-bold text-lg mb-2">Start Your Journey</h4>
+                            <p class="text-slate-300 text-sm mb-6 leading-relaxed">Complete exams to unlock detailed performance analytics and insights</p>
+                            <a href="{{ url_for('exam_schedule') }}" class="inline-flex items-center space-x-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white py-3 px-6 rounded-xl font-bold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/30">
+                                <i class="fas fa-rocket"></i>
+                                <span>Begin Learning</span>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Mobile Navigation -->
+<div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-200/50 md:hidden z-40 shadow-2xl">
+    <div class="grid grid-cols-4 gap-1 p-3">
+        <a href="{{ url_for('dashboard') }}" class="mobile-nav-item active">
+            <i class="fas fa-home text-xl mb-1"></i>
+            <span class="text-xs font-medium">Home</span>
+        </a>
+        <a href="{{ url_for('exam_schedule') }}" class="mobile-nav-item">
+            <i class="fas fa-calendar-alt text-xl mb-1"></i>
+            <span class="text-xs">Schedule</span>
+        </a>
+        <a href="{{ url_for('my_results') }}" class="mobile-nav-item">
+            <i class="fas fa-chart-line text-xl mb-1"></i>
+            <span class="text-xs">Results</span>
+        </a>
+        <a href="{{ url_for('profile') }}" class="mobile-nav-item">
+            <i class="fas fa-user text-xl mb-1"></i>
+            <span class="text-xs">Profile</span>
+        </a>
+    </div>
+</div>
+
+<!-- Premium Modals -->
+<div id="achievements-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black opacity-50"></div>
+        <div class="premium-card-3d max-w-2xl w-full mx-auto relative z-10">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-secondary-900 flex items-center">
+                    <i class="fas fa-trophy mr-3 text-amber-500"></i>
+                    Your Achievements
+                </h3>
+                <button onclick="closeModal('achievements-modal')" class="premium-btn-ghost p-2">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="achievements-content">
+                <!-- Achievements will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="leaderboard-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black opacity-50"></div>
+        <div class="premium-card-3d max-w-2xl w-full mx-auto relative z-10">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-secondary-900 flex items-center">
+                    <i class="fas fa-crown mr-3 text-purple-500"></i>
+                    Global Leaderboard
+                </h3>
+                <button onclick="closeModal('leaderboard-modal')" class="premium-btn-ghost p-2">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="leaderboard-content">
+                <!-- Leaderboard will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Enhanced JavaScript with Gamification Features
+    
+    // Update time with smooth transitions
+    function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+        });
+        const timeElement = document.getElementById('current-time');
+        if (timeElement && timeElement.textContent !== timeString) {
+            timeElement.style.opacity = '0.5';
+            setTimeout(() => {
+                timeElement.textContent = timeString;
+                timeElement.style.opacity = '1';
+            }, 200);
+        }
+    }
+    
+    setInterval(updateTime, 1000);
+    
+    // Enhanced notification system
+    function toggleNotifications() {
+        const dropdown = document.getElementById('notifications-dropdown');
+        dropdown.classList.toggle('hidden');
+        
+        if (!dropdown.classList.contains('hidden')) {
+            loadNotifications();
+        }
+    }
+    
+    // Enhanced user menu
+    function toggleUserMenu() {
+        const menu = document.getElementById('user-menu');
+        menu.classList.toggle('hidden');
+    }
+    
+    // Enhanced notification loading
+    function loadNotifications() {
+        fetch('/api/student/notifications')
+            .then(response => response.json())
+            .then(data => {
+                const list = document.getElementById('notifications-list');
+                if (data.notifications && data.notifications.length > 0) {
+                    list.innerHTML = data.notifications.map(notification => `
+                        <div class="p-4 border-b border-white/20 hover:bg-white/5 transition-all">
+                            <div class="flex items-start space-x-3">
+                                <div class="w-8 h-8 bg-gradient-to-r from-${notification.color || 'primary'}-400 to-${notification.color || 'primary'}-500 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-${notification.icon || 'bell'} text-white text-xs"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-secondary-900 text-sm">${notification.title}</h4>
+                                    <p class="text-secondary-600 text-xs mt-1">${notification.message}</p>
+                                    <div class="flex items-center justify-between mt-2">
+                                        <span class="text-xs text-secondary-500">${notification.time_ago}</span>
+                                        ${notification.action_url ? `
+                                            <a href="${notification.action_url}" class="text-primary-600 text-xs font-medium hover:text-primary-700">
+                                                ${notification.action_text} →
+                                            </a>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = `
+                        <div class="p-8 text-center text-secondary-500">
+                            <i class="fas fa-bell-slash text-3xl mb-3 text-secondary-300"></i>
+                            <p class="text-sm">No new notifications</p>
+                            <p class="text-xs mt-1">You're all caught up! 🎉</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading notifications:', error);
+                showToast('Failed to load notifications', 'error');
+            });
+    }
+    
+    // Gamification functions
+    function showAllAchievements() {
+        document.getElementById('achievements-modal').classList.remove('hidden');
+        loadAchievements();
+    }
+    
+    function showFullLeaderboard() {
+        document.getElementById('leaderboard-modal').classList.remove('hidden');
+        loadLeaderboard();
+    }
+    
+    function showAllChallenges() {
+        window.location.href = '{{ url_for("student_challenges") }}';
+    }
+    
+    function loadAchievements() {
+        fetch('/api/student/achievements')
+            .then(response => response.json())
+            .then(data => {
+                const content = document.getElementById('achievements-content');
+                // Implementation for achievements loading
+                content.innerHTML = '<p class="text-center text-secondary-600">Loading achievements...</p>';
+            });
+    }
+    
+    function loadLeaderboard() {
+        fetch('/api/student/leaderboard')
+            .then(response => response.json())
+            .then(data => {
+                const content = document.getElementById('leaderboard-content');
+                // Implementation for leaderboard loading
+                content.innerHTML = '<p class="text-center text-secondary-600">Loading leaderboard...</p>';
+            });
+    }
+    
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+    }
+    
+    // Virtual classroom functions
+    function joinVirtualClassroom() {
+        window.location.href = '/virtual-classroom';
+    }
+
+    function browseStudyGroups() {
+        window.location.href = '/virtual-classroom';
+    }    function refreshChallenges() {
+        showToast('Checking for new challenges...', 'info');
+        setTimeout(() => {
+            showToast('No new challenges at this time', 'info');
+        }, 1500);
+    }
+    
+    // Enhanced exam preview
+    function showExamPreview(examId) {
+        showToast('Exam preview feature coming soon!', 'info');
+    }
+    
+    // Toast notification system
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        const colors = {
+            success: 'from-green-500 to-emerald-500',
+            error: 'from-red-500 to-rose-500',
+            warning: 'from-yellow-500 to-amber-500',
+            info: 'from-blue-500 to-cyan-500'
+        };
+        
+        toast.className = `fixed top-20 right-4 bg-gradient-to-r ${colors[type]} text-white px-6 py-4 rounded-xl shadow-lg transform translate-x-full transition-transform duration-300 z-50`;
+        toast.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation' : 'info'}-circle"></i>
+                <span class="font-medium">${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+        }, 100);
+        
+        setTimeout(() => {
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 3000);
+    }
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        const notificationsDropdown = document.getElementById('notifications-dropdown');
+        const userMenu = document.getElementById('user-menu');
+        
+        if (!event.target.closest('[onclick="toggleNotifications()"]') && !notificationsDropdown.contains(event.target)) {
+            notificationsDropdown.classList.add('hidden');
+        }
+        
+        if (!event.target.closest('[onclick="toggleUserMenu()"]') && !userMenu.contains(event.target)) {
+            userMenu.classList.add('hidden');
+        }
+    });
+    
+    // Enhanced initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add stagger animation to cards
+        const cards = document.querySelectorAll('.premium-card-3d');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+        });
+        
+        // Initialize performance rings with animation
+        const rings = document.querySelectorAll('svg path[stroke-dasharray]');
+        rings.forEach(ring => {
+            const value = ring.getAttribute('stroke-dasharray').split(',')[0];
+            ring.style.strokeDasharray = '0, 100';
+            setTimeout(() => {
+                ring.style.transition = 'stroke-dasharray 1.5s ease-in-out';
+                ring.style.strokeDasharray = `${value}, 100`;
+            }, 500);
+        });
+        
+        // Auto-refresh notifications every 30 seconds
+        setInterval(loadNotifications, 30000);
+        
+        // Welcome message for new users
+        setTimeout(() => {
+            showToast('Welcome to your enhanced QUIZZO dashboard! 🚀', 'success');
+        }, 2000);
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(event) {
+        if (event.ctrlKey || event.metaKey) {
+            switch(event.key) {
+                case 'n':
+                    event.preventDefault();
+                    toggleNotifications();
+                    break;
+                case 's':
+                    event.preventDefault();
+                    window.location.href = '{{ url_for("exam_schedule") }}';
+                    break;
+                case 'r':
+                    event.preventDefault();
+                    window.location.href = '{{ url_for("my_results") }}';
+                    break;
+            }
+        }
+    });
+
+    // ==================== COURSE ENROLLMENT FUNCTIONS ====================
+    
+    async function enrollInCourse(courseId, courseTitle) {
+        try {
+            const response = await fetch(`/enroll_course/${courseId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Show success notification with enrollment details
+                showEnrollmentSuccess(result.enrollment_number, courseTitle, result.student_name, result.enrolled_at);
+                
+                // Refresh the page to show updated enrollment status
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+            } else {
+                showNotification(result.message, 'warning');
+            }
+        } catch (error) {
+            console.error('Enrollment error:', error);
+            showNotification('Failed to enroll in course. Please try again.', 'error');
+        }
+    }
+    
+    function showEnrollmentSuccess(enrollmentNumber, courseTitle, studentName, enrolledAt) {
+        // Create a beautiful enrollment success modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-graduation-cap text-white text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Successfully Enrolled!</h2>
+                    <p class="text-gray-600 mb-6">You're now enrolled in <strong>${courseTitle}</strong></p>
+                    
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-6 border border-blue-200">
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="font-medium text-gray-700">Enrollment Number:</span>
+                                <span class="font-bold text-blue-600" id="enrollmentNumber">${enrollmentNumber}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="font-medium text-gray-700">Student Name:</span>
+                                <span class="text-gray-900">${studentName}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="font-medium text-gray-700">Enrolled Date:</span>
+                                <span class="text-gray-900">${enrolledAt}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="copyEnrollmentNumber('${enrollmentNumber}')" 
+                                class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300">
+                            <i class="fas fa-copy mr-2"></i>Copy Number
+                        </button>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition duration-300">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+            if (document.body.contains(modal)) {
+                modal.remove();
+            }
+        }, 10000);
+    }
+    
+    function showEnrollmentDetails(enrollmentNumber, courseTitle, enrolledDate) {
+        // Show enrollment details modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-gradient-to-r from-indigo-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-id-card text-white text-2xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">Enrollment Details</h2>
+                    <p class="text-gray-600 mb-6">${courseTitle}</p>
+                    
+                    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 mb-6 border border-indigo-200">
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="font-medium text-gray-700">Enrollment Number:</span>
+                                <span class="font-bold text-indigo-600" id="enrollmentNumberDisplay">${enrollmentNumber}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="font-medium text-gray-700">Enrolled Date:</span>
+                                <span class="text-gray-900">${enrolledDate}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="copyEnrollmentNumber('${enrollmentNumber}')" 
+                                class="flex-1 bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 transition duration-300">
+                            <i class="fas fa-copy mr-2"></i>Copy Number
+                        </button>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition duration-300">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    function copyEnrollmentNumber(enrollmentNumber) {
+        navigator.clipboard.writeText(enrollmentNumber).then(() => {
+            showNotification(`Enrollment number ${enrollmentNumber} copied to clipboard!`, 'success');
+        }).catch(() => {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = enrollmentNumber;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showNotification(`Enrollment number ${enrollmentNumber} copied to clipboard!`, 'success');
+        });
+    }
+</script>
+{% endblock %}

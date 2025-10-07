@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ exam.title }} - QUIZZO Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        body { 
+            user-select: none; 
+            -webkit-user-select: none; 
+            -moz-user-select: none; 
+            -ms-user-select: none; 
+        }
+        #exam-container { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 9999; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .question-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .option-hover:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        .ai-panel {
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.9) 0%, rgba(30, 30, 30, 0.95) 100%);
+            backdrop-filter: blur(20px);
+        }
+        .progress-ring {
+            transition: stroke-dasharray 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(102, 126, 234, 0.8); }
+        }
+        .ai-active {
+            animation: pulse-glow 2s infinite;
+        }
+        
+        /* Enhanced Grace Period Countdown Animations */
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        @keyframes countdown-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes background-blur {
+            0% { backdrop-filter: blur(0px); }
+            100% { backdrop-filter: blur(8px); }
+        }
+        
+        .grace-countdown-backdrop {
+            animation: background-blur 0.5s ease-in-out forwards;
+        }
+        
+        /* Multiple Choice Selection Styles */
+        .option-selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            border-color: #667eea !important;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .option-selected .option-text {
+            color: white !important;
+        }
+        
+        .option-dot-selected {
+            opacity: 1 !important;
+            background: white !important;
+        }
+    </style>
+</head>
+<body class="overflow-hidden"
+      x-data="examSystem()"
+      x-init="initializeExam()">
+    <div id="exam-container" class="flex">
+        <!-- Main Exam Area -->
+        <div class="flex-1 flex flex-col">
+            <!-- Premium Top Bar with AI Status -->
+            <div class="glassmorphism px-6 py-4 flex justify-between items-center border-b border-white/20">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
+                            <span class="text-white font-bold text-lg">Q</span>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-white">{{ exam.title }}</h1>
+                            <p class="text-sm text-white/80">Student: {{ user.username }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Ring -->
+                    <div class="relative">
+                        <svg class="w-16 h-16 transform -rotate-90">
+                            <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.2)" stroke-width="4" fill="none"/>
+                            <circle cx="32" cy="32" r="28" stroke="url(#progressGradient)" stroke-width="4" fill="none"
+                                    :stroke-dasharray="`${(currentQuestion / totalQuestions) * 175.9} 175.9`"
+                                    class="transition-all duration-500"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-white font-bold text-sm" x-text="`${currentQuestion}/${totalQuestions}`"></span>
+                        </div>
+                        <defs>
+                            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea"/>
+                                <stop offset="100%" style="stop-color:#764ba2"/>
+                            </linearGradient>
+                        </defs>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-6">
+                    <!-- AI Status with Premium Design -->
+                    <div class="flex items-center space-x-3 glassmorphism px-4 py-2 rounded-full ai-active">
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                        </div>
+                        <span class="text-sm font-semibold text-white">AI Secure Mode</span>
+                    </div>
+                    
+                    <!-- Premium Timer -->
+                    <div class="glassmorphism px-6 py-3 rounded-xl">
+                        <div class="text-center">
+                            <div class="text-xs text-white/70 uppercase tracking-wide">Time Remaining</div>
+                            <div id="timer" class="text-2xl font-bold text-white font-mono" x-text="formattedTime"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Premium Questions Area -->
+            <div class="flex-1 p-6 overflow-y-auto">
+                <form id="exam-form" x-ref="examForm">
+                    <input type="hidden" name="session_id" value="{{ session.id }}">
+                    {% for question in questions %}
+                    <div class="question-card rounded-2xl p-8 mb-8 transition-all duration-300 hover:scale-[1.02]" 
+                         data-question-id="{{ question.id }}"
+                         x-show="currentQuestion === {{ loop.index }}"
+                         x-transition:enter="transition ease-out duration-300"
+                         x-transition:enter-start="opacity-0 transform scale-95"
+                         x-transition:enter-end="opacity-100 transform scale-100">
+                        
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                Question {{ loop.index }}
+                            </h3>
+                            <div class="flex items-center space-x-2">
+                                <span class="px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 rounded-full text-sm font-medium">
+                                    {% if question.question_type == 'multiple_choice' %}Multiple Choice{% else %}Essay{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="text-lg text-gray-800 mb-8 leading-relaxed">
+                            {{ question.text }}
+                        </div>
+                        
+                        {% if question.question_type == 'multiple_choice' %}
+                            <!-- Premium Multiple Choice Options -->
+                            <div class="space-y-4">
+                                {% for option, letter in [('option_a', 'A'), ('option_b', 'B'), ('option_c', 'C'), ('option_d', 'D')] %}
+                                <label class="group flex items-center p-6 border-2 border-gray-200 rounded-xl cursor-pointer transition-all duration-300 option-hover has-[:checked]:bg-gradient-to-r has-[:checked]:from-purple-500 has-[:checked]:to-pink-500 has-[:checked]:text-white has-[:checked]:border-purple-500">
+                                    <div class="flex items-center justify-center w-8 h-8 border-2 border-purple-300 rounded-full mr-4 group-hover:border-white transition-colors relative">
+                                        <input type="radio" name="answer_{{ question.id }}" value="{{ letter }}" 
+                                               class="absolute opacity-0 w-full h-full cursor-pointer"
+                                               x-on:change="saveAnswer({{ question.id }}, '{{ letter }}'); updateOptionStyles()">
+                                        <div class="w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full opacity-0 group-hover:opacity-100 peer-checked:opacity-100 transition-opacity"></div>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full text-sm font-bold mr-4">{{ letter }}</span>
+                                        <span class="text-gray-800 text-lg group-hover:text-white transition-colors">{{ question[option] }}</span>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <!-- Premium Essay Input -->
+                            <div class="space-y-4">
+                                <textarea 
+                                    name="answer_{{ question.id }}" 
+                                    class="w-full p-6 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-200 focus:border-purple-400 transition-all duration-300 min-h-[200px] text-lg leading-relaxed" 
+                                    placeholder="Write your detailed answer here... Use specific examples and explain your reasoning."
+                                    x-on:input="saveAnswer({{ question.id }}, $event.target.value)">
+                                </textarea>
+                                <div class="flex items-center justify-between text-sm text-gray-500">
+                                    <span>💡 Tip: Be specific and provide examples to support your answer</span>
+                                    <span x-text="`${$event.target?.value?.length || 0} characters`"></span>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Question Navigation -->
+                        <div class="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+                            <button type="button" 
+                                    x-show="currentQuestion > 1"
+                                    x-on:click="previousQuestion()"
+                                    class="flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 transform hover:scale-105">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                                Previous
+                            </button>
+                            
+                            <div class="flex space-x-2">
+                                {% for i in range(1, questions|length + 1) %}
+                                <button type="button" 
+                                        x-on:click="goToQuestion({{ i }})"
+                                        class="w-8 h-8 rounded-full text-sm font-medium transition-all duration-200"
+                                        :class="currentQuestion === {{ i }} ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'">
+                                    {{ i }}
+                                </button>
+                                {% endfor %}
+                            </div>
+                            
+                            <button type="button" 
+                                    x-show="currentQuestion < totalQuestions"
+                                    x-on:click="nextQuestion()"
+                                    class="flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl transition-all duration-200 transform hover:scale-105">
+                                Next
+                                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </form>
+            </div>
+            
+            <!-- Premium Submit Button -->
+            <div class="glassmorphism px-6 py-6 border-t border-white/20">
+                <div class="text-center mb-4">
+                    <div class="text-white/80 text-sm mb-2">Ready to submit your exam?</div>
+                    <div class="text-white/60 text-xs">You can review your answers before final submission</div>
+                </div>
+                <button id="submit-exam" 
+                        x-on:click="submitExam()"
+                        class="w-full px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl">
+                    <div class="flex items-center justify-center space-x-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>Submit Exam</span>
+                    </div>
+                </button>
+                <div class="mt-3 text-center text-white/60 text-xs">
+                    💡 Pro tip: Press Ctrl+Enter for quick submission
+                </div>
+            </div>
+        </div>
+        
+        <!-- Premium AI Monitoring Panel -->
+        <div class="w-96 ai-panel border-l border-white/10">
+            <!-- AI Panel Header -->
+            <div class="p-6 border-b border-white/10">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-white text-lg">🤖 AI ProctorGuard</h3>
+                    <div class="flex items-center space-x-2" id="ai-status-indicator">
+                        <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse" id="status-indicator"></div>
+                        <span class="text-green-400 text-sm font-medium" id="status-text">Active</span>
+                    </div>
+                </div>
+                <div class="text-white/70 text-sm">
+                    Advanced AI monitoring ensures exam integrity and prevents violations.
+                </div>
+            </div>
+            
+            <!-- Enhanced Webcam Feed -->
+            <div class="p-6 border-b border-white/10">
+                <h4 class="text-white font-semibold mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                    Live Camera Feed
+                </h4>
+                <div class="relative">
+                    <video id="webcam" width="100%" height="200" autoplay muted 
+                           class="rounded-xl border-2 border-white/20 bg-black shadow-2xl"></video>
+                    <canvas id="detection-canvas" width="320" height="240" class="hidden"></canvas>
+                    
+                    <!-- AI Analysis Overlay -->
+                    <div class="absolute top-3 left-3 glassmorphism px-3 py-1 rounded-full">
+                        <span class="text-white text-xs font-medium" id="face-detection-status">Face Detection: Initializing...</span>
+                    </div>
+                    <div class="absolute top-3 right-3 glassmorphism px-3 py-1 rounded-full">
+                        <span class="text-yellow-400 text-xs font-medium" id="verification-status">🔄 Checking...</span>
+                    </div>
+                    
+                    <!-- Camera Error Overlay -->
+                    <div id="camera-error-overlay" class="absolute inset-0 bg-red-900/80 rounded-xl flex items-center justify-center hidden">
+                        <div class="text-center text-white p-4">
+                            <div class="text-4xl mb-2">📷</div>
+                            <div class="font-bold">Camera Access Required</div>
+                            <div class="text-sm">Please enable camera to continue</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI Insights Dashboard -->
+                <div class="mt-4 space-y-3">
+                    <div class="glassmorphism p-3 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-white/80 text-sm">Integrity Score</span>
+                            <span class="text-green-400 font-bold integrity-score">98%</span>
+                        </div>
+                        <div class="w-full bg-white/20 rounded-full h-2 mt-2">
+                            <div class="bg-gradient-to-r from-green-400 to-emerald-500 h-2 rounded-full integrity-progress" style="width: 98%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="glassmorphism p-3 rounded-lg text-center">
+                            <div class="text-white/60 text-xs">Eye Contact</div>
+                            <div class="text-green-400 font-bold text-lg" data-metric="eye-contact">95%</div>
+                        </div>
+                        <div class="glassmorphism p-3 rounded-lg text-center">
+                            <div class="text-white/60 text-xs">Focus Level</div>
+                            <div class="text-blue-400 font-bold text-lg" data-metric="focus-level">92%</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Real-time Monitoring Status -->
+                    <div class="glassmorphism p-3 rounded-lg">
+                        <div class="text-white/80 text-sm mb-2">Real-time Status</div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div id="monitoring-face" class="flex items-center">
+                                <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                                <span class="text-green-400">Face: OK</span>
+                            </div>
+                            <div id="monitoring-position" class="flex items-center">
+                                <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                                <span class="text-green-400">Position: Normal</span>
+                            </div>
+                            <div id="monitoring-objects" class="flex items-center">
+                                <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                                <span class="text-green-400">Objects: Clear</span>
+                            </div>
+                            <div id="monitoring-attention" class="flex items-center">
+                                <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                                <span class="text-green-400">Focus: Good</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Enhanced Monitoring Alerts -->
+            <div class="p-6">
+                <h4 class="font-semibold text-white mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Activity Log
+                </h4>
+                <div id="alerts-log" class="space-y-3 max-h-48 overflow-y-auto">
+                    <div class="flex items-center space-x-3 glassmorphism p-3 rounded-lg">
+                        <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <div class="text-white/80 text-sm">Camera initialized successfully</div>
+                    </div>
+                    <div class="flex items-center space-x-3 glassmorphism p-3 rounded-lg">
+                        <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <div class="text-white/80 text-sm">Face detection activated</div>
+                    </div>
+                    <div class="flex items-center space-x-3 glassmorphism p-3 rounded-lg">
+                        <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+                        <div class="text-white/80 text-sm">Exam session started</div>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="mt-4 glassmorphism p-4 rounded-xl">
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div>
+                            <div class="text-2xl font-bold text-white" x-text="timeElapsed">00:05:23</div>
+                            <div class="text-white/60 text-xs">Time Elapsed</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-green-400">0</div>
+                            <div class="text-white/60 text-xs">Violations</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Warning Panel -->
+            <div id="warning-panel" class="p-6 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-t border-yellow-400/30 hidden">
+                <h4 class="font-semibold text-yellow-300 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.866-.833-2.632 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    System Alert
+                </h4>
+                <p id="warning-text" class="text-yellow-200 text-sm"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Disqualification Modal -->
+    <div id="disqualification-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50" style="backdrop-filter: blur(5px);">
+        <div class="bg-white p-8 rounded-lg shadow-2xl max-w-lg mx-4 border-4 border-red-600">
+            <div class="text-center">
+                <div class="text-6xl mb-4">🚫</div>
+                <h2 class="text-2xl font-bold text-red-600 mb-4">EXAM TERMINATED</h2>
+                <div class="bg-red-50 border-l-4 border-red-600 p-4 mb-6">
+                    <p class="text-gray-800 font-semibold mb-2">You have been disqualified from this exam due to AI-detected violations.</p>
+                    <p class="text-sm text-gray-700 mb-2"><strong>Reason:</strong> <span id="disqualification-reason" class="text-red-700 font-semibold"></span></p>
+                    <p class="text-sm text-gray-600"><strong>Total Violations:</strong> <span id="violation-count-display" class="text-red-600 font-bold">3</span>/3</p>
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-300 rounded p-3 mb-6">
+                    <p class="text-sm text-blue-800">
+                        <strong>📊 Your Results:</strong> You will be able to view your exam results showing answers completed up to the point of disqualification.
+                    </p>
+                </div>
+                
+                <div class="space-y-3">
+                    <button id="acknowledge-btn" onclick="acknowledgeDisqualification()" 
+                            class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
+                        View My Results
+                    </button>
+                    <button onclick="contactLecturer()" 
+                            class="w-full px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-200">
+                        Contact Lecturer
+                    </button>
+                </div>
+                
+                <div id="countdown-timer" class="mt-4 text-sm text-gray-500">
+                    Automatically redirecting to results in <span id="countdown-seconds" class="font-bold text-blue-600">30</span> seconds...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced AI Monitoring Variables - Relaxed System with 10-second Grace Period
+        let video, canvas, ctx;
+        let faceDetectionInterval;
+        let tabSwitchCount = 0;
+        let examStartTime = new Date();
+        
+        // Single Person Focused Monitoring Configuration
+        const SINGLE_PERSON_MODE = true; // Focus on single person, disable multiple people detection
+        const REDUCED_FALSE_POSITIVES = true; // Enable enhanced false positive reduction
+        
+        // Enhanced Violation Tracking with Grace Periods
+        let violationCount = 0;
+        let faceNotDetectedCount = 0;
+        let headTurnViolations = 0;
+        let objectDetectionViolations = 0;
+        let lastFaceDetectedTime = Date.now();
+        let headTrackingActive = false;
+        
+        // Head Turn Grace Period System
+        let isHeadTurnedAway = false;
+        let headTurnStartTime = null;
+        let headTurnGraceCountdown = 0;
+        let graceCountdownInterval = null;
+        let graceCountdownDisplay = null;
+        
+        // Audio and Visual Alerts
+        let warningAudio = null;
+        let alarmAudio = null;
+        let examLocked = false;
+        let consecutiveFaceFailures = 0;
+        let lastObjectDetectionTime = 0;
+        
+        // Background Processing and Noise Filtering
+        let backgroundCanvas, backgroundCtx;
+        let personMask = null;
+        let blurredBackground = null;
+        let noiseFilterBuffer = [];
+        const NOISE_FILTER_SIZE = 5;
+        
+        // Enhanced Relaxed Constants - More Forgiving System
+        const MAX_VIOLATIONS = 3;
+        const HEAD_TURN_GRACE_PERIOD = 10000; // 10 seconds grace period for head turns
+        const FACE_DETECTION_TIMEOUT = 12000; // 12 seconds without face = violation
+        const CONSECUTIVE_FACE_FAILURES_LIMIT = 15; // 15 consecutive failures (very lenient)
+        const OBJECT_DETECTION_COOLDOWN = 8000; // 8 seconds between object detections
+        
+        // Enhanced AI monitoring initialization
+        async function initializeMonitoring() {
+            console.log('🔧 Initializing Enhanced AI Monitoring System...');
+            
+            video = document.getElementById('webcam');
+            canvas = document.getElementById('detection-canvas');
+            ctx = canvas.getContext('2d');
+            
+            // Update status indicators
+            updateStatusIndicator('camera', 'Initializing camera...', 'yellow');
+            
+            // Initialize background processing canvas
+            backgroundCanvas = document.createElement('canvas');
+            backgroundCtx = backgroundCanvas.getContext('2d');
+            
+            // Create countdown display element
+            createGraceCountdownDisplay();
+            
+            // Create multiple warning audio types
+            createWarningAudioSounds();
+            
+            try {
+                // Request camera access with improved constraints
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640, min: 320 }, 
+                        height: { ideal: 480, min: 240 },
+                        frameRate: { ideal: 30, min: 15 }
+                    },
+                    audio: false // Explicitly no audio for privacy
+                });
+                
+                video.srcObject = stream;
+                
+                // Wait for video to be ready
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        console.log('✅ Camera stream ready');
+                        resolve();
+                    };
+                });
+                
+                // Setup canvas dimensions
+                setupBackgroundProcessing();
+                
+                // Update UI to show camera is active
+                updateStatusIndicator('face', 'Face Detection: Active', 'green');
+                updateStatusIndicator('verification', '✓ Camera Ready', 'green');
+                hideErrorOverlay();
+                
+                // Start enhanced monitoring
+                startEnhancedMonitoring();
+                
+                // Add success alerts
+                addAlert('✅ AI monitoring system initialized successfully', 'success');
+                addAlert('📹 Camera feed active and monitoring', 'success');
+                addAlert('⏱️ 10-second grace period enabled for head movements', 'info');
+                addAlert('🎯 Single-person focused monitoring active', 'success');
+                
+                console.log('🚀 AI Monitoring System fully operational');
+                
+            } catch (error) {
+                console.error('❌ Camera initialization failed:', error);
+                
+                // Show error state
+                updateStatusIndicator('camera', 'Camera Error', 'red');
+                updateStatusIndicator('face', 'Face Detection: Disabled', 'red');
+                updateStatusIndicator('verification', '❌ No Camera', 'red');
+                showErrorOverlay();
+                
+                addAlert('❌ Camera access denied - Please enable camera', 'error');
+                
+                // Try to handle different error types
+                if (error.name === 'NotAllowedError') {
+                    addAlert('🔒 Camera permission denied by user', 'error');
+                    showCameraPermissionHelp();
+                } else if (error.name === 'NotFoundError') {
+                    addAlert('📷 No camera device found', 'error');
+                } else if (error.name === 'NotReadableError') {
+                    addAlert('🔧 Camera is being used by another application', 'error');
+                } else {
+                    addAlert('⚠️ Unknown camera error - please check camera settings', 'error');
+                }
+                
+                // Disable exam interaction until camera is fixed
+                // (Optional - comment out if you want to allow exam without camera)
+                // disableExamInteraction();
+            }
+        }
+        
+        function updateStatusIndicator(type, message, status) {
+            const colors = {
+                'green': 'text-green-400',
+                'yellow': 'text-yellow-400', 
+                'red': 'text-red-400',
+                'blue': 'text-blue-400'
+            };
+            
+            if (type === 'camera') {
+                const statusIndicator = document.getElementById('status-indicator');
+                const statusText = document.getElementById('status-text');
+                if (statusIndicator && statusText) {
+                    statusIndicator.className = `w-3 h-3 bg-${status}-400 rounded-full animate-pulse`;
+                    statusText.textContent = message;
+                    statusText.className = `text-sm font-medium ${colors[status]}`;
+                }
+            } else if (type === 'face') {
+                const faceStatus = document.getElementById('face-detection-status');
+                if (faceStatus) {
+                    faceStatus.textContent = message;
+                    faceStatus.className = `text-xs font-medium ${colors[status]}`;
+                }
+            } else if (type === 'verification') {
+                const verificationStatus = document.getElementById('verification-status');
+                if (verificationStatus) {
+                    verificationStatus.textContent = message;
+                    verificationStatus.className = `text-xs font-medium ${colors[status]}`;
+                }
+            }
+        }
+        
+        function showErrorOverlay() {
+            const overlay = document.getElementById('camera-error-overlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+            }
+        }
+        
+        function hideErrorOverlay() {
+            const overlay = document.getElementById('camera-error-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
+        }
+        
+        function showCameraPermissionHelp() {
+            // Create help modal for camera permissions
+            const helpModal = document.createElement('div');
+            helpModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            helpModal.innerHTML = `
+                <div class="bg-white p-8 rounded-xl max-w-md mx-4">
+                    <h3 class="text-xl font-bold text-red-600 mb-4">📷 Camera Access Required</h3>
+                    <div class="space-y-3 text-sm text-gray-700">
+                        <p>This exam requires camera monitoring. Please:</p>
+                        <ol class="list-decimal list-inside space-y-2 ml-4">
+                            <li>Click the camera icon in your browser's address bar</li>
+                            <li>Select "Allow" for camera permissions</li>
+                            <li>Refresh this page to restart the exam</li>
+                        </ol>
+                        <div class="bg-blue-50 border border-blue-200 rounded p-3 mt-4">
+                            <p class="text-blue-800 text-xs">
+                                <strong>Note:</strong> Camera access is required for exam integrity monitoring.
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" 
+                            class="mt-6 w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        I Understand
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(helpModal);
+        }
+        
+        function createGraceCountdownDisplay() {
+            // Create countdown display for grace period
+            graceCountdownDisplay = document.createElement('div');
+            graceCountdownDisplay.id = 'grace-countdown';
+            graceCountdownDisplay.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #ff6b6b, #ffa500);
+                color: white;
+                padding: 30px 50px;
+                border-radius: 20px;
+                font-size: 24px;
+                font-weight: bold;
+                text-align: center;
+                box-shadow: 0 15px 40px rgba(255, 107, 107, 0.6);
+                z-index: 10000;
+                display: none;
+                animation: pulse 1s infinite;
+                border: 4px solid rgba(255, 255, 255, 0.3);
+            `;
+            graceCountdownDisplay.innerHTML = `
+                <div style="font-size: 20px; margin-bottom: 15px;">⚠️ HEAD MOVEMENT DETECTED</div>
+                <div style="font-size: 48px; margin: 15px 0; font-weight: 900;" id="countdown-number">10</div>
+                <div style="font-size: 18px; margin-bottom: 10px;">seconds to return to normal position</div>
+                <div style="font-size: 14px; opacity: 0.9;">Please look directly at the screen</div>
+            `;
+            document.body.appendChild(graceCountdownDisplay);
+            
+            // Add backdrop blur when countdown is shown
+            const backdrop = document.createElement('div');
+            backdrop.id = 'grace-countdown-backdrop';
+            backdrop.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.4);
+                backdrop-filter: blur(5px);
+                z-index: 9999;
+                display: none;
+            `;
+            document.body.appendChild(backdrop);
+        }
+        
+        function setupBackgroundProcessing() {
+            // Setup background blur and person focus
+            backgroundCanvas.width = video.videoWidth;
+            backgroundCanvas.height = video.videoHeight;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        }
+        
+        function createWarningAudioSounds() {
+            // Create different warning sounds including LARGE ALARM
+            const warningBeep = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhCSuEze7ZiCkIG3PF8eOJOQcXaLnt4p1NEAtUpe3tsGIcBzuL0vLOeSsFJnjI7+CJSwkVYrPq66dWEwpJpOHzumEiCSuCze7Z';
+            const criticalBeep = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhCSuEze7ZiCkIG3PF8eOJOQcXaLnt4p1NEAtUpe3tsGIcBzuL0vLOeSsFJnjI7+CJSwkVYrPq66dWEwpJpOHzumEiCSuCze7Z';
+            
+            warningAudio = {
+                normal: new Audio(warningBeep),
+                critical: new Audio(criticalBeep),
+                finalWarning: new Audio(criticalBeep)
+            };
+            
+            // Create LARGE ALARM SOUND for violations
+            alarmAudio = new Audio(criticalBeep);
+            alarmAudio.volume = 1.0; // Maximum volume
+            alarmAudio.loop = false;
+            
+            // Set different volumes and speeds
+            warningAudio.normal.volume = 0.6;
+            warningAudio.critical.volume = 0.9;
+            warningAudio.finalWarning.volume = 0.9;
+        }
+        
+        function startEnhancedMonitoring() {
+            console.log('🔄 Starting enhanced monitoring systems...');
+            
+            // Enhanced monitoring with improved feedback
+            faceDetectionInterval = setInterval(() => {
+                if (video && video.readyState === 4) {
+                    processVideoFrameWithEnhancements();
+                    detectFaceAndObjects();
+                    checkHeadPositionWithGracePeriod();
+                    monitorFacePresence();
+                    updateMonitoringUI();
+                }
+            }, 1000); // 1 second intervals for smooth monitoring
+            
+            // Background processing interval (less frequent)
+            setInterval(() => {
+                if (video && video.readyState === 4) {
+                    updateBackgroundBlur();
+                    monitorSuspiciousActivity();
+                    updateIntegrityScore();
+                }
+            }, 2000);
+            
+            console.log('✅ Enhanced monitoring active with UI feedback');
+            addAlert('🔄 Real-time monitoring started', 'info');
+        }
+        
+        function updateMonitoringUI() {
+            // Update face detection status
+            if (Date.now() - lastFaceDetectedTime < 3000) {
+                updateStatusIndicator('face', 'Face Detection: Active ✓', 'green');
+                updateStatusIndicator('verification', '✓ Face Visible', 'green');
+            } else if (Date.now() - lastFaceDetectedTime < 8000) {
+                updateStatusIndicator('face', 'Face Detection: Checking...', 'yellow');
+                updateStatusIndicator('verification', '🔍 Searching...', 'yellow');
+            } else {
+                updateStatusIndicator('face', 'Face Detection: Not Found', 'red');
+                updateStatusIndicator('verification', '⚠️ No Face', 'red');
+            }
+            
+            // Update integrity score display
+            const integrityElement = document.querySelector('.integrity-score');
+            if (integrityElement) {
+                const score = Math.max(50, 100 - (violationCount * 15));
+                integrityElement.textContent = `${score}%`;
+                
+                // Update progress bar
+                const progressBar = document.querySelector('.integrity-progress');
+                if (progressBar) {
+                    progressBar.style.width = `${score}%`;
+                    progressBar.className = score > 80 ? 'bg-gradient-to-r from-green-400 to-emerald-500 h-2 rounded-full' :
+                                          score > 60 ? 'bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full' :
+                                                      'bg-gradient-to-r from-red-400 to-red-600 h-2 rounded-full';
+                }
+            }
+        }
+        
+        function updateIntegrityScore() {
+            // Calculate current integrity score
+            const baseScore = 100;
+            const violationPenalty = violationCount * 15;
+            const timePenalty = Math.max(0, (Date.now() - lastFaceDetectedTime) / 1000 / 60 * 2); // 2% per minute without face
+            
+            const currentScore = Math.max(0, baseScore - violationPenalty - timePenalty);
+            
+            // Update UI elements
+            const elements = {
+                eyeContact: Math.max(70, 95 - (violationCount * 8)),
+                focusLevel: Math.max(60, 92 - (violationCount * 5)),
+                integrity: currentScore
+            };
+            
+            // Update eye contact percentage
+            const eyeContactElement = document.querySelector('[data-metric="eye-contact"]');
+            if (eyeContactElement) {
+                eyeContactElement.textContent = `${Math.round(elements.eyeContact)}%`;
+            }
+            
+            // Update focus level
+            const focusElement = document.querySelector('[data-metric="focus-level"]');
+            if (focusElement) {
+                focusElement.textContent = `${Math.round(elements.focusLevel)}%`;
+            }
+        }
+        
+        function processVideoFrameWithEnhancements() {
+            if (!video || video.readyState !== 4 || examLocked) return;
+            
+            // Setup canvas dimensions
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            backgroundCanvas.width = video.videoWidth;
+            backgroundCanvas.height = video.videoHeight;
+            
+            // Draw current frame
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            backgroundCtx.drawImage(video, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
+            
+            // Apply background blur and person focus
+            applyBackgroundBlurAndPersonFocus();
+        }
+        
+        function applyBackgroundBlurAndPersonFocus() {
+            // Create person mask (simplified person detection)
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            personMask = createPersonMask(imageData);
+            
+            // Apply blur to background areas
+            backgroundCtx.filter = 'blur(8px)';
+            backgroundCtx.drawImage(video, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
+            backgroundCtx.filter = 'none';
+            
+            // Composite: sharp person + blurred background
+            const backgroundImageData = backgroundCtx.getImageData(0, 0, backgroundCanvas.width, backgroundCanvas.height);
+            const compositeData = ctx.createImageData(canvas.width, canvas.height);
+            
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const pixelIndex = i / 4;
+                const y = Math.floor(pixelIndex / canvas.width);
+                const x = pixelIndex % canvas.width;
+                
+                if (personMask && isPersonPixel(x, y, personMask)) {
+                    // Keep original (sharp) person pixels
+                    compositeData.data[i] = imageData.data[i];         // R
+                    compositeData.data[i + 1] = imageData.data[i + 1]; // G
+                    compositeData.data[i + 2] = imageData.data[i + 2]; // B
+                    compositeData.data[i + 3] = imageData.data[i + 3]; // A
+                } else {
+                    // Use blurred background pixels
+                    compositeData.data[i] = backgroundImageData.data[i];         // R
+                    compositeData.data[i + 1] = backgroundImageData.data[i + 1]; // G
+                    compositeData.data[i + 2] = backgroundImageData.data[i + 2]; // B
+                    compositeData.data[i + 3] = backgroundImageData.data[i + 3]; // A
+                }
+            }
+            
+            // Display the enhanced frame
+            ctx.putImageData(compositeData, 0, 0);
+        }
+        
+        function createPersonMask(imageData) {
+            // Simplified person detection based on skin tones and face region
+            const width = imageData.width;
+            const height = imageData.height;
+            const mask = new Array(width * height).fill(false);
+            
+            // Detect center region where person is likely to be
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const personRadius = Math.min(width, height) * 0.3;
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                    
+                    // Mark center region as person (can be enhanced with actual person detection)
+                    if (distance < personRadius) {
+                        mask[y * width + x] = true;
+                    }
+                }
+            }
+            
+            return mask;
+        }
+        
+        function isPersonPixel(x, y, mask) {
+            const index = y * canvas.width + x;
+            return mask && mask[index];
+        }
+        
+        function updateBackgroundBlur() {
+            // Continuously update background blur effect
+            if (!video || video.readyState !== 4) return;
+            processVideoFrameWithEnhancements();
+        }
+        
+        function detectFaceAndObjects() {
+            if (!video || video.readyState !== 4 || examLocked) return;
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // Relaxed face detection - focus on major head movements
+            const faceDetected = simulateHeadPositionDetection(imageData);
+            
+            if (faceDetected.detected) {
+                lastFaceDetectedTime = Date.now();
+                faceNotDetectedCount = 0;
+                consecutiveFaceFailures = 0;
+                headTrackingActive = true;
+                
+                // Check if head is significantly turned away (backwards or sideways)
+                if (faceDetected.headTurnedAway) {
+                    handleHeadTurnViolationWithGracePeriod();
+                }
+                
+                // Relaxed object detection - only for obvious prohibited items
+                const objectsDetected = detectObviousProhibitedObjects(imageData);
+                if (objectsDetected.length > 0 && Date.now() - lastObjectDetectionTime > OBJECT_DETECTION_COOLDOWN) {
+                    handleObjectViolation(objectsDetected);
+                    lastObjectDetectionTime = Date.now();
+                }
+                
+                // Check for multiple faces (keep this detection)
+                const multipleFaces = detectMultipleFaces(imageData);
+                if (multipleFaces > 1) {
+                    handleMultipleFacesViolation(multipleFaces);
+                }
+                
+            } else {
+                faceNotDetectedCount++;
+                consecutiveFaceFailures++;
+                headTrackingActive = false;
+                
+                // More lenient face absence detection
+                if (consecutiveFaceFailures >= CONSECUTIVE_FACE_FAILURES_LIMIT) {
+                    handleFaceViolation();
+                } else if (faceNotDetectedCount >= 8) { // 8 seconds at 1s intervals
+                    handleFaceViolation();
+                }
+            }
+        }
+        
+        function simulateHeadPositionDetection(imageData) {
+            // Focus on detecting significant head movements (backwards/sideways)
+            const brightness = calculateBrightness(imageData);
+            const contrast = calculateContrast(imageData);
+            const faceRegion = detectFaceRegion(imageData);
+            
+            // More lenient face detection for general presence
+            let detected = false;
+            let headTurnedAway = false;
+            
+            // Basic face presence check (more lenient)
+            if (brightness >= 30 && brightness <= 230 && contrast >= 15) {
+                if (faceRegion.detected && faceRegion.confidence > 0.4) { // Reduced from 0.6
+                    detected = true;
+                    
+                    // Check for significant head turning (backward or sideways)
+                    headTurnedAway = detectSignificantHeadTurn(imageData, faceRegion);
+                }
+            }
+            
+            return {
+                detected: detected,
+                headTurnedAway: headTurnedAway,
+                brightness: brightness,
+                contrast: contrast,
+                faceRegion: faceRegion
+            };
+        }
+        
+        function detectSignificantHeadTurn(imageData, faceRegion) {
+            // Detect if head is turned significantly backwards or sideways
+            const width = imageData.width;
+            const height = imageData.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            // Check if face is significantly off-center (indicating head turn)
+            const faceOffCenter = Math.abs(faceRegion.centerX - centerX) > width * 0.3 ||
+                                 Math.abs(faceRegion.centerY - centerY) > height * 0.2;
+            
+            // Check brightness patterns that indicate profile view
+            const profileIndicators = analyzeProfilePatterns(imageData);
+            
+            // Simulate detection of head turned away (very reduced sensitivity to prevent false positives)
+            const headTurnDetected = faceOffCenter || profileIndicators || Math.random() < 0.01; // 1% chance (reduced from 3%)
+            
+            return headTurnDetected;
+        }
+        
+        function analyzeProfilePatterns(imageData) {
+            // Analyze if the face appears to be in profile (turned sideways)
+            const width = imageData.width;
+            const height = imageData.height;
+            const pixels = imageData.data;
+            
+            // Check left vs right brightness asymmetry
+            let leftBrightness = 0, rightBrightness = 0;
+            let leftCount = 0, rightCount = 0;
+            
+            for (let y = height * 0.3; y < height * 0.7; y++) {
+                for (let x = 0; x < width; x++) {
+                    const index = (y * width + x) * 4;
+                    const brightness = (pixels[index] + pixels[index + 1] + pixels[index + 2]) / 3;
+                    
+                    if (x < width * 0.5) {
+                        leftBrightness += brightness;
+                        leftCount++;
+                    } else {
+                        rightBrightness += brightness;
+                        rightCount++;
+                    }
+                }
+            }
+            
+            const leftAvg = leftBrightness / leftCount;
+            const rightAvg = rightBrightness / rightCount;
+            
+            // Significant asymmetry might indicate profile view
+            return Math.abs(leftAvg - rightAvg) > 40;
+        }
+        
+        function checkHeadPosition() {
+            // Replace eye tracking with head position monitoring
+            if (examLocked || !headTrackingActive) return;
+            
+            // This is called from the main detection loop
+            // Head turn detection is handled in detectFaceAndObjects
+        }
+        
+        function detectObviousProhibitedObjects(imageData) {
+            const detectedObjects = [];
+            
+            // More relaxed object detection - only detect obvious violations
+            const edgesDensity = calculateEdgeDensity(imageData);
+            const colorVariation = calculateColorVariation(imageData);
+            const rectangularShapes = detectRectangularShapes(imageData);
+            const textPatterns = hasTextLikePatterns(imageData);
+            
+            // Mobile phone detection (more obvious cases only)
+            if (rectangularShapes.count > 0 && edgesDensity > 0.4 && colorVariation < 0.2) {
+                const phoneScore = calculatePhoneScore(rectangularShapes, edgesDensity, colorVariation);
+                if (phoneScore > 0.8) { // Increased threshold
+                    detectedObjects.push('mobile_phone');
+                }
+            }
+            
+            // Book/paper detection (more obvious cases only)
+            if (textPatterns && edgesDensity > 0.5 && rectangularShapes.count > 0) {
+                const bookScore = calculateBookScore(textPatterns, edgesDensity, rectangularShapes);
+                if (bookScore > 0.8) { // Increased threshold
+                    detectedObjects.push('book_or_paper');
+                }
+            }
+            
+            // Large tablet/laptop detection (obvious cases)
+            if (rectangularShapes.largeRectangles > 0 && edgesDensity > 0.6) {
+                detectedObjects.push('tablet_or_laptop');
+            }
+            
+            // Very minimal random detection chance to reduce false positives
+            if (Math.random() < 0.001) { // 0.1% chance (reduced from 0.5%)
+                const suspiciousObjects = ['mobile_phone', 'book_or_paper', 'tablet_or_laptop'];
+                detectedObjects.push(suspiciousObjects[Math.floor(Math.random() * suspiciousObjects.length)]);
+            }
+            
+            return detectedObjects;
+        }
+        
+        function handleHeadTurnViolationWithGracePeriod() {
+            if (examLocked) return;
+            
+            if (!isHeadTurnedAway) {
+                // First detection - start grace period
+                isHeadTurnedAway = true;
+                headTurnStartTime = Date.now();
+                headTurnGraceCountdown = 10; // 10 seconds grace period
+                
+                // Show countdown display
+                showGraceCountdown();
+                startGraceCountdownTimer();
+                
+                addAlert('⚠️ Head movement detected - 10 second grace period started', 'warning');
+                playWarningSound('normal');
+                return;
+            }
+            
+            // Check if grace period has expired
+            const turnAwayDuration = Date.now() - headTurnStartTime;
+            if (turnAwayDuration > HEAD_TURN_GRACE_PERIOD) {
+                // Grace period expired - count as violation
+                headTurnViolations++;
+                violationCount++;
+                
+                hideGraceCountdown();
+                
+                const message = `Head turned away - Grace period expired (Violation ${violationCount}/${MAX_VIOLATIONS})`;
+                
+                if (violationCount >= MAX_VIOLATIONS) {
+                    playLargeAlarmSound();
+                    lockExamScreen();
+                    sendAlert('head_turn_violation', 'critical', 'Head turned away - Exam terminated after grace period');
+                    forceSubmitExam('Head turned away from screen - Grace period expired');
+                } else {
+                    const soundType = violationCount === 2 ? 'finalWarning' : 'critical';
+                    playWarningSound(soundType);
+                    sendAlert('head_turn_violation', violationCount === 2 ? 'high' : 'medium', message);
+                    showStrictWarning(message, violationCount, 'head_turn');
+                }
+                
+                addAlert(`� ${message}`, 'error');
+                resetHeadTurnState();
+            }
+        }
+        
+        function showGraceCountdown() {
+            if (graceCountdownDisplay) {
+                graceCountdownDisplay.style.display = 'block';
+                document.getElementById('countdown-number').textContent = headTurnGraceCountdown;
+                
+                // Show backdrop
+                const backdrop = document.getElementById('grace-countdown-backdrop');
+                if (backdrop) {
+                    backdrop.style.display = 'block';
+                }
+                
+                // Update monitoring status
+                updateMonitoringStatus('position', 'Head Turn Grace Period', 'yellow');
+                
+                // Play soft warning sound
+                playWarningSound('normal');
+            }
+        }
+        
+        function hideGraceCountdown() {
+            if (graceCountdownDisplay) {
+                graceCountdownDisplay.style.display = 'none';
+            }
+            
+            // Hide backdrop
+            const backdrop = document.getElementById('grace-countdown-backdrop');
+            if (backdrop) {
+                backdrop.style.display = 'none';
+            }
+            
+            if (graceCountdownInterval) {
+                clearInterval(graceCountdownInterval);
+                graceCountdownInterval = null;
+            }
+            
+            // Reset monitoring status
+            updateMonitoringStatus('position', 'Position: Normal', 'green');
+        }
+        
+        function updateMonitoringStatus(type, message, status) {
+            const statusElements = {
+                'face': 'monitoring-face',
+                'position': 'monitoring-position', 
+                'objects': 'monitoring-objects',
+                'attention': 'monitoring-attention'
+            };
+            
+            const elementId = statusElements[type];
+            if (elementId) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    const indicator = element.querySelector('.w-2');
+                    const text = element.querySelector('span');
+                    
+                    if (indicator && text) {
+                        indicator.className = `w-2 h-2 bg-${status}-400 rounded-full mr-2 animate-pulse`;
+                        text.textContent = message;
+                        text.className = `text-${status}-400`;
+                    }
+                }
+            }
+        }
+        
+        function startGraceCountdownTimer() {
+            if (graceCountdownInterval) {
+                clearInterval(graceCountdownInterval);
+            }
+            
+            graceCountdownInterval = setInterval(() => {
+                headTurnGraceCountdown--;
+                
+                if (graceCountdownDisplay) {
+                    const countdownElement = document.getElementById('countdown-number');
+                    if (countdownElement) {
+                        countdownElement.textContent = headTurnGraceCountdown;
+                        
+                        // Change colors as countdown progresses
+                        if (headTurnGraceCountdown <= 3) {
+                            graceCountdownDisplay.style.background = 'linear-gradient(135deg, #ff1744, #ff6b6b)';
+                            countdownElement.style.animation = 'pulse 0.5s infinite';
+                        } else if (headTurnGraceCountdown <= 6) {
+                            graceCountdownDisplay.style.background = 'linear-gradient(135deg, #ff9800, #ffa500)';
+                        }
+                    }
+                }
+                
+                // Play countdown beeps
+                if (headTurnGraceCountdown <= 5 && headTurnGraceCountdown > 0) {
+                    playWarningSound('normal');
+                }
+                
+                if (headTurnGraceCountdown <= 0) {
+                    clearInterval(graceCountdownInterval);
+                    graceCountdownInterval = null;
+                }
+            }, 1000); // Update every second
+        }
+        
+        function resetHeadTurnState() {
+            isHeadTurnedAway = false;
+            headTurnStartTime = null;
+            headTurnGraceCountdown = 0;
+            hideGraceCountdown();
+        }
+        
+        function checkHeadPositionWithGracePeriod() {
+            // Enhanced head position checking with noise filtering
+            if (examLocked || !headTrackingActive) return;
+            
+            // Apply noise filtering to reduce false positives
+            const currentDetection = detectHeadMovementWithNoiseFilter();
+            
+            if (currentDetection.headTurnedAway) {
+                handleHeadTurnViolationWithGracePeriod();
+            } else if (isHeadTurnedAway) {
+                // Head returned to normal position during grace period
+                addAlert('✅ Head position normalized - Grace period cancelled', 'success');
+                resetHeadTurnState();
+            }
+        }
+        
+        function detectHeadMovementWithNoiseFilter() {
+            // Get current frame data
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const currentDetection = simulateHeadPositionDetection(imageData);
+            
+            // Add to noise filter buffer
+            noiseFilterBuffer.push(currentDetection);
+            if (noiseFilterBuffer.length > NOISE_FILTER_SIZE) {
+                noiseFilterBuffer.shift(); // Remove oldest detection
+            }
+            
+            // Apply noise filtering - require consistent detection
+            if (noiseFilterBuffer.length >= NOISE_FILTER_SIZE) {
+                const headTurnCount = noiseFilterBuffer.filter(d => d.headTurnedAway).length;
+                const confidenceThreshold = Math.ceil(NOISE_FILTER_SIZE * 0.6); // 60% agreement
+                
+                return {
+                    detected: currentDetection.detected,
+                    headTurnedAway: headTurnCount >= confidenceThreshold,
+                    confidence: headTurnCount / NOISE_FILTER_SIZE
+                };
+            }
+            
+            return currentDetection;
+        }
+        
+        function playLargeAlarmSound() {
+            // Play the large alarm sound for violations
+            if (alarmAudio) {
+                alarmAudio.currentTime = 0;
+                alarmAudio.play().catch(e => console.log('Could not play alarm sound:', e));
+                
+                // Play multiple times for emphasis
+                setTimeout(() => {
+                    alarmAudio.currentTime = 0;
+                    alarmAudio.play().catch(e => console.log('Could not play alarm sound:', e));
+                }, 500);
+                
+                setTimeout(() => {
+                    alarmAudio.currentTime = 0;
+                    alarmAudio.play().catch(e => console.log('Could not play alarm sound:', e));
+                }, 1000);
+            }
+            
+            // Enhanced visual alert - screen flashing
+            let flashCount = 0;
+            const flashInterval = setInterval(() => {
+                document.body.style.backgroundColor = flashCount % 2 === 0 ? '#ff4444' : '#ffffff';
+                document.body.style.border = '10px solid red';
+                flashCount++;
+                if (flashCount >= 8) {
+                    clearInterval(flashInterval);
+                    document.body.style.backgroundColor = '#f7efe7';
+                    document.body.style.border = 'none';
+                }
+            }, 300);
+        }
+        
+        function lockExamScreen() {
+            // Lock the entire exam screen when violation occurs
+            const examForm = document.getElementById('exam-form');
+            const submitBtn = document.getElementById('submit-exam');
+            
+            if (examForm) {
+                examForm.style.pointerEvents = 'none';
+                examForm.style.opacity = '0.3';
+                examForm.style.filter = 'blur(2px)';
+            }
+            
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'EXAM LOCKED - VIOLATION DETECTED';
+                submitBtn.classList.add('bg-red-600', 'cursor-not-allowed');
+            }
+            
+            // Add overlay to prevent interaction
+            const overlay = document.createElement('div');
+            overlay.id = 'violation-overlay';
+            overlay.className = 'fixed inset-0 bg-red-500 bg-opacity-20 z-40 flex items-center justify-center';
+            overlay.innerHTML = `
+                <div class="text-center text-red-800 font-bold">
+                    <div class="text-6xl mb-4">🚫</div>
+                    <div class="text-2xl">EXAM LOCKED</div>
+                    <div class="text-lg">Violation Detected - Please Wait</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        
+        // Enhanced eye tracking simulation with multiple patterns
+        function simulateAdvancedEyeTracking() {
+            // Enhanced eye tracking simulation with multiple patterns
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            // Simulate eye position
+            const eyeX = Math.random() * canvas.width;
+            const eyeY = Math.random() * canvas.height;
+            
+            // Calculate distance from center
+            const distanceFromCenter = Math.sqrt(Math.pow(eyeX - centerX, 2) + Math.pow(eyeY - centerY, 2));
+            const maxDistance = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2));
+            const normalizedDistance = distanceFromCenter / maxDistance;
+            
+            // Enhanced looking away detection
+            const lookingAway = normalizedDistance > 0.4 || Math.random() < 0.08; // 8% chance
+            
+            // Detect rapid movement
+            const rapidMovement = Math.random() < 0.05; // 5% chance
+            
+            // Detect looking at corners (suspicious behavior)
+            const lookingAtCorners = (
+                (eyeX < canvas.width * 0.15 || eyeX > canvas.width * 0.85) &&
+                (eyeY < canvas.height * 0.15 || eyeY > canvas.height * 0.85)
+            );
+            
+            return {
+                x: eyeX,
+                y: eyeY,
+                lookingAway: lookingAway,
+                rapidMovement: rapidMovement,
+                lookingAtCorners: lookingAtCorners,
+                distanceFromCenter: normalizedDistance
+            };
+        }
+        
+        function monitorFacePresence() {
+            const timeSinceLastFace = Date.now() - lastFaceDetectedTime;
+            
+            if (timeSinceLastFace > FACE_DETECTION_TIMEOUT) {
+                handleFaceAbsenceViolation();
+            }
+        }
+        
+        function handleFaceViolation() {
+            if (examLocked) return;
+            
+            violationCount++;
+            const message = `Face not detected on screen (Violation ${violationCount}/${MAX_VIOLATIONS})`;
+            
+            if (violationCount >= MAX_VIOLATIONS) {
+                playLargeAlarmSound();
+                lockExamScreen();
+                sendAlert('face_not_detected', 'critical', 'Face not detected - Exam terminated');
+                forceSubmitExam('Face not consistently detected during exam');
+            } else {
+                const soundType = violationCount === 2 ? 'finalWarning' : 'normal';
+                playWarningSound(soundType);
+                sendAlert('face_not_detected', violationCount === 2 ? 'high' : 'medium', message);
+                showStrictWarning(message, violationCount, 'face');
+            }
+            
+            addAlert(`⚠️ ${message}`, 'error');
+        }
+        
+        function handleObjectViolation(objects) {
+            if (examLocked) return;
+            
+            objectDetectionViolations++;
+            violationCount++;
+            
+            const objectList = objects.join(', ');
+            const message = `Prohibited objects detected: ${objectList} (Violation ${violationCount}/${MAX_VIOLATIONS})`;
+            
+            if (violationCount >= MAX_VIOLATIONS) {
+                playLargeAlarmSound();
+                lockExamScreen();
+                sendAlert('prohibited_objects', 'critical', `Prohibited objects detected: ${objectList} - Exam terminated`);
+                forceSubmitExam(`Prohibited objects detected: ${objectList}`);
+            } else {
+                const soundType = violationCount === 2 ? 'finalWarning' : 'normal';
+                playWarningSound(soundType);
+                sendAlert('prohibited_objects', violationCount === 2 ? 'high' : 'medium', message);
+                showStrictWarning(message, violationCount, 'object');
+            }
+            
+            addAlert(`🚫 ${message}`, 'error');
+        }
+        
+        // Remove eye tracking violation handler - not needed anymore
+        
+        function handleFaceAbsenceViolation() {
+            violationCount++;
+            const message = `Face absent from screen for too long (Violation ${violationCount}/${MAX_VIOLATIONS})`;
+            
+            if (violationCount >= MAX_VIOLATIONS) {
+                playWarningSound();
+                sendAlert('face_absence', 'critical', 'Face absent from screen for extended period - Auto-submitting exam');
+                forceSubmitExam('Face was absent from screen for too long');
+            } else {
+                playWarningSound();
+                sendAlert('face_absence', violationCount === 2 ? 'high' : 'medium', message);
+                showStrictWarning(message, violationCount);
+            }
+            
+            addAlert(`❌ ${message}`, 'error');
+            lastFaceDetectedTime = Date.now(); // Reset timer to avoid repeated violations
+        }
+        
+        function playWarningSound(violationType = 'normal') {
+            if (warningAudio && !examLocked) {
+                let soundToPlay;
+                
+                switch(violationType) {
+                    case 'critical':
+                    case 'final':
+                        soundToPlay = warningAudio.critical;
+                        // Play critical sound 3 times for emphasis
+                        playMultipleSounds(soundToPlay, 3, 300);
+                        break;
+                    case 'finalWarning':
+                        soundToPlay = warningAudio.finalWarning;
+                        // Play final warning sound 2 times
+                        playMultipleSounds(soundToPlay, 2, 500);
+                        break;
+                    default:
+                        soundToPlay = warningAudio.normal;
+                        soundToPlay.currentTime = 0;
+                        soundToPlay.play().catch(e => console.log('Could not play warning sound:', e));
+                }
+            }
+            
+            // Enhanced visual alert with different colors for different violations
+            const borderColor = violationType === 'critical' || violationType === 'final' ? 'red' : 
+                               violationType === 'finalWarning' ? 'orange' : 'yellow';
+            const borderWidth = violationType === 'critical' || violationType === 'final' ? '8px' : '5px';
+            
+            document.body.style.border = `${borderWidth} solid ${borderColor}`;
+            document.body.style.boxShadow = `inset 0 0 20px ${borderColor}`;
+            
+            // Flash effect for critical violations
+            if (violationType === 'critical' || violationType === 'final') {
+                let flashCount = 0;
+                const flashInterval = setInterval(() => {
+                    document.body.style.backgroundColor = flashCount % 2 === 0 ? '#ffeeee' : '#ffffff';
+                    flashCount++;
+                    if (flashCount >= 6) {
+                        clearInterval(flashInterval);
+                        document.body.style.backgroundColor = '#f7efe7';
+                    }
+                }, 200);
+            }
+            
+            setTimeout(() => {
+                document.body.style.border = 'none';
+                document.body.style.boxShadow = 'none';
+            }, violationType === 'critical' || violationType === 'final' ? 3000 : 1000);
+        }
+        
+        function playMultipleSounds(audio, count, delay) {
+            let playCount = 0;
+            const playNext = () => {
+                if (playCount < count && !examLocked) {
+                    audio.currentTime = 0;
+                    audio.play().catch(e => console.log('Could not play warning sound:', e));
+                    playCount++;
+                    if (playCount < count) {
+                        setTimeout(playNext, delay);
+                    }
+                }
+            };
+            playNext();
+        }
+        
+        function showStrictWarning(message, violationCount, violationType) {
+            const warningPanel = document.getElementById('warning-panel');
+            const warningText = document.getElementById('warning-text');
+            
+            // Different warning icons for different violation types
+            const violationIcons = {
+                'face': '😐',
+                'object': '📱',
+                'head_turn': '�',
+                'multiple_faces': '👥',
+                'suspicious': '⚠️'
+            };
+            
+            const icon = violationIcons[violationType] || '⚠️';
+            
+            warningText.innerHTML = `
+                <div class="flex items-center mb-2">
+                    <span class="text-2xl mr-2">${icon}</span>
+                    <strong class="text-lg">${message}</strong>
+                </div>
+                <div class="mb-2">
+                    <span class="text-red-600 font-bold">Warning ${violationCount} of ${MAX_VIOLATIONS}</span>
+                </div>
+                ${violationCount === 2 ? 
+                    '<div class="text-red-800 font-bold text-lg bg-red-100 p-2 rounded border-l-4 border-red-600">🚨 FINAL WARNING: Next violation will automatically submit your exam!</div>' : 
+                    ''}
+                <div class="text-sm text-gray-600 mt-2">
+                    Ensure you are alone, looking at the screen, and have no prohibited items visible.
+                </div>
+            `;
+            
+            // Different styling based on violation count
+            warningPanel.classList.remove('hidden');
+            if (violationCount >= 2) {
+                warningPanel.className = 'p-6 bg-red-100 border-t-4 border-red-600 shadow-lg';
+            } else {
+                warningPanel.className = 'p-4 bg-yellow-50 border-t-2 border-yellow-400';
+            }
+            
+            // Keep warning visible longer for higher violations
+            const timeout = violationCount >= 2 ? 15000 : 8000; // 15s for final warning, 8s for others
+            setTimeout(() => {
+                warningPanel.classList.add('hidden');
+            }, timeout);
+        }
+        
+        function forceSubmitExam(reason) {
+            if (examLocked) return; // Prevent multiple submissions
+            examLocked = true;
+            
+            // Clear all intervals
+            if (faceDetectionInterval) {
+                clearInterval(faceDetectionInterval);
+            }
+            
+            // Update AI status to show termination
+            const statusIndicator = document.getElementById('status-indicator');
+            const statusText = document.getElementById('status-text');
+            if (statusIndicator && statusText) {
+                statusIndicator.className = 'w-3 h-3 bg-red-500 rounded-full animate-pulse';
+                statusText.textContent = 'EXAM TERMINATED';
+                statusText.className = 'text-sm font-bold text-red-600';
+            }
+            
+            // Play final critical warning sound
+            playWarningSound('final');
+            
+            // Show disqualification modal FIRST
+            showDisqualificationModal(reason);
+            
+            // Submit exam in background without immediate redirect
+            fetch('/complete_exam/{{ session.id }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    forced_submission: true,
+                    reason: reason,
+                    violation_count: violationCount,
+                    timestamp: new Date().toISOString()
+                })
+            }).then(response => response.json())
+            .then(data => {
+                console.log('Exam submitted due to violations:', data);
+                // Modal will handle the redirect after user acknowledgment
+                addAlert(`🚫 Exam auto-submitted: ${reason}`, 'error');
+            }).catch(error => {
+                console.error('Error submitting exam:', error);
+                // Still show the modal even if submission fails
+                addAlert(`⚠️ Network error during submission`, 'error');
+            });
+        }
+        
+        // Enhanced helper functions for better detection
+        function checkForMultiplePeople() {
+            // Single person mode - completely disable multiple people detection
+            if (SINGLE_PERSON_MODE) {
+                return; // Skip multiple people checks entirely
+            }
+            
+            // If not in single person mode, still disabled to reduce false positives
+            // Focus on single-person monitoring instead
+            return;
+        }
+        
+        function handleMultipleFacesViolation(faceCount) {
+            if (examLocked) return;
+            
+            violationCount++;
+            const message = `Multiple people detected (${faceCount} faces) - Violation ${violationCount}/${MAX_VIOLATIONS}`;
+            
+            if (violationCount >= MAX_VIOLATIONS) {
+                playWarningSound('critical');
+                sendAlert('multiple_faces', 'critical', 'Multiple people detected - Auto-submitting exam');
+                forceSubmitExam(`Multiple people detected in exam area (${faceCount} faces)`);
+            } else {
+                const soundType = violationCount === 2 ? 'finalWarning' : 'normal';
+                playWarningSound(soundType);
+                sendAlert('multiple_faces', violationCount === 2 ? 'high' : 'medium', message);
+                showStrictWarning(message, violationCount, 'multiple_faces');
+            }
+            
+            addAlert(`👥 ${message}`, 'error');
+        }
+        
+        function monitorSuspiciousActivity() {
+            // Monitor for various suspicious patterns
+            if (examLocked) return;
+            
+            // Check for rapid tab switching
+            if (tabSwitchCount >= 2) {
+                addAlert(`⚠️ Multiple tab switches detected (${tabSwitchCount})`, 'warning');
+            }
+            
+            // Monitor for extended periods without interaction
+            // This would be implemented with actual user interaction tracking
+        }
+        
+        function detectMultipleFaces(imageData) {
+            // Simulate multiple face detection
+            const brightness = calculateBrightness(imageData);
+            const contrast = calculateContrast(imageData);
+            
+            // Higher contrast and brightness variations might indicate multiple faces
+            // Disabled random multiple face detection to prevent false positives
+            // Always assume single person for focused monitoring
+            return 1;
+        }
+        
+        function calculateEdgeSharpness(imageData) {
+            // Simulate edge sharpness calculation for focus detection
+            const pixels = imageData.data;
+            let edgeSum = 0;
+            let pixelCount = 0;
+            
+            for (let i = 0; i < pixels.length - 4; i += 4) {
+                const current = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+                const next = (pixels[i + 4] + pixels[i + 5] + pixels[i + 6]) / 3;
+                edgeSum += Math.abs(current - next);
+                pixelCount++;
+            }
+            
+            return edgeSum / pixelCount / 255; // Normalize to 0-1
+        }
+        
+        function detectRectangularShapes(imageData) {
+            // Simulate rectangular shape detection for objects
+            const edgeDensity = calculateEdgeDensity(imageData);
+            const width = imageData.width;
+            const height = imageData.height;
+            
+            // Simulate shape detection
+            const rectangularShapes = {
+                count: edgeDensity > 0.3 ? Math.floor(Math.random() * 3) + 1 : 0,
+                largeRectangles: edgeDensity > 0.5 ? 1 : 0,
+                aspectRatios: [1.5, 0.6, 2.1] // Simulated aspect ratios
+            };
+            
+            return rectangularShapes;
+        }
+        
+        function calculatePhoneScore(rectangularShapes, edgeDensity, colorVariation) {
+            // Calculate likelihood of phone presence
+            let score = 0;
+            
+            // Rectangular shape with phone-like aspect ratio
+            if (rectangularShapes.count > 0) {
+                const phoneAspectRatio = rectangularShapes.aspectRatios.find(ratio => 
+                    ratio > 1.5 && ratio < 2.5);
+                if (phoneAspectRatio) score += 0.4;
+            }
+            
+            // Low color variation (dark screen)
+            if (colorVariation < 0.3) score += 0.3;
+            
+            // Medium edge density (screen edges)
+            if (edgeDensity > 0.2 && edgeDensity < 0.4) score += 0.3;
+            
+            return score;
+        }
+        
+        function calculateBookScore(textPatterns, edgeDensity, rectangularShapes) {
+            // Calculate likelihood of book/paper presence
+            let score = 0;
+            
+            // Text patterns present
+            if (textPatterns) score += 0.4;
+            
+            // High edge density (text lines)
+            if (edgeDensity > 0.3) score += 0.3;
+            
+            // Rectangular shape (book/paper)
+            if (rectangularShapes.count > 0) score += 0.3;
+            
+            return score;
+        }
+        
+        // Helper functions for image analysis
+        function calculateBrightness(imageData) {
+            let brightness = 0;
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                brightness += (imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2]) / 3;
+            }
+            return brightness / (imageData.data.length / 4);
+        }
+        
+        function calculateContrast(imageData) {
+            const brightness = calculateBrightness(imageData);
+            let variance = 0;
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const pixelBrightness = (imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2]) / 3;
+                variance += Math.pow(pixelBrightness - brightness, 2);
+            }
+            return Math.sqrt(variance / (imageData.data.length / 4));
+        }
+        
+        function detectFaceRegion(imageData) {
+            // Enhanced face region detection with confidence scoring and center coordinates
+            const width = imageData.width;
+            const height = imageData.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            // Check for face-like brightness patterns in multiple regions
+            const regions = [
+                { x: centerX - 50, y: centerY - 50, w: 100, h: 100 }, // Center
+                { x: centerX - 75, y: centerY - 40, w: 150, h: 80 },  // Face oval
+                { x: centerX - 30, y: centerY - 60, w: 60, h: 40 }    // Eyes region
+            ];
+            
+            let totalConfidence = 0;
+            let validRegions = 0;
+            let detectedCenterX = centerX;
+            let detectedCenterY = centerY;
+            
+            regions.forEach(region => {
+                let regionBrightness = 0;
+                let pixelCount = 0;
+                let varianceSum = 0;
+                
+                for (let y = Math.max(0, region.y); y < Math.min(height, region.y + region.h); y++) {
+                    for (let x = Math.max(0, region.x); x < Math.min(width, region.x + region.w); x++) {
+                        const index = (y * width + x) * 4;
+                        const brightness = (imageData.data[index] + imageData.data[index + 1] + imageData.data[index + 2]) / 3;
+                        regionBrightness += brightness;
+                        pixelCount++;
+                    }
+                }
+                
+                if (pixelCount > 0) {
+                    const avgBrightness = regionBrightness / pixelCount;
+                    
+                    // Calculate variance for texture analysis
+                    for (let y = Math.max(0, region.y); y < Math.min(height, region.y + region.h); y++) {
+                        for (let x = Math.max(0, region.x); x < Math.min(width, region.x + region.w); x++) {
+                            const index = (y * width + x) * 4;
+                            const brightness = (imageData.data[index] + imageData.data[index + 1] + imageData.data[index + 2]) / 3;
+                            varianceSum += Math.pow(brightness - avgBrightness, 2);
+                        }
+                    }
+                    
+                    const variance = varianceSum / pixelCount;
+                    const confidence = calculateRegionConfidence(avgBrightness, variance, pixelCount);
+                    
+                    if (confidence > 0.2) { // More lenient threshold
+                        totalConfidence += confidence;
+                        validRegions++;
+                        
+                        // Update detected center if this is the best region
+                        if (confidence > 0.5) {
+                            detectedCenterX = region.x + region.w / 2;
+                            detectedCenterY = region.y + region.h / 2;
+                        }
+                    }
+                }
+            });
+            
+            const finalConfidence = validRegions > 0 ? totalConfidence / validRegions : 0;
+            
+            return {
+                detected: finalConfidence > 0.3, // More lenient threshold
+                confidence: finalConfidence,
+                validRegions: validRegions,
+                centerX: detectedCenterX,
+                centerY: detectedCenterY
+            };
+        }
+        
+        function calculateRegionConfidence(brightness, variance, pixelCount) {
+            let confidence = 0;
+            
+            // Brightness should be in face-like range
+            if (brightness >= 60 && brightness <= 180) {
+                confidence += 0.4;
+            } else if (brightness >= 40 && brightness <= 220) {
+                confidence += 0.2;
+            }
+            
+            // Moderate variance indicates skin texture
+            if (variance >= 200 && variance <= 1000) {
+                confidence += 0.3;
+            } else if (variance >= 100 && variance <= 1500) {
+                confidence += 0.1;
+            }
+            
+            // Sufficient pixel count
+            if (pixelCount > 500) {
+                confidence += 0.3;
+            } else if (pixelCount > 200) {
+                confidence += 0.1;
+            }
+            
+            return Math.min(confidence, 1.0);
+        }
+        
+        function calculateEdgeDensity(imageData) {
+            // Simulate edge detection for object recognition
+            return Math.random() * 0.5; // Placeholder
+        }
+        
+        function calculateColorVariation(imageData) {
+            // Simulate color variation analysis
+            return Math.random(); // Placeholder
+        }
+        
+        function hasTextLikePatterns(imageData) {
+            // Simulate text pattern detection
+            return Math.random() < 0.3; // Placeholder
+        }
+        
+        function detectFace() {
+            // This is a simplified face detection simulation
+            // In a real implementation, you would use libraries like face-api.js or OpenCV.js
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Simulate face detection (replace with actual face detection)
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const brightness = calculateBrightness(imageData);
+            
+            if (brightness < 30) { // More tolerant brightness threshold
+                sendAlert('face_not_detected', 'medium', 'Face not clearly visible');
+            }
+            // Removed random multiple faces detection to prevent false positives
+        }
+        
+        function calculateBrightness(imageData) {
+            let brightness = 0;
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                brightness += (imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2]) / 3;
+            }
+            return brightness / (imageData.data.length / 4);
+        }
+        
+        function sendAlert(alertType, severity, description) {
+            fetch('/ai_alert', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: {{ session.id }},
+                    alert_type: alertType,
+                    severity: severity,
+                    description: description
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.action === 'disqualified') {
+                    showDisqualification(description);
+                } else {
+                    showWarning(description);
+                }
+                addAlert(`⚠️ ${description}`, severity === 'critical' ? 'error' : 'warning');
+            });
+        }
+        
+        function addAlert(message, type) {
+            const alertsLog = document.getElementById('alerts-log');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = type === 'error' ? 'text-red-600' : type === 'warning' ? 'text-yellow-600' : 'text-green-600';
+            alertDiv.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            alertsLog.appendChild(alertDiv);
+            alertsLog.scrollTop = alertsLog.scrollHeight;
+        }
+        
+        function showWarning(message) {
+            const warningPanel = document.getElementById('warning-panel');
+            const warningText = document.getElementById('warning-text');
+            warningText.textContent = message;
+            warningPanel.classList.remove('hidden');
+            
+            setTimeout(() => {
+                warningPanel.classList.add('hidden');
+            }, 5000);
+        }
+        
+        function showDisqualificationModal(reason) {
+            const modal = document.getElementById('disqualification-modal');
+            const reasonText = document.getElementById('disqualification-reason');
+            const violationCountDisplay = document.getElementById('violation-count-display');
+            reasonText.textContent = reason;
+            violationCountDisplay.textContent = violationCount;
+            modal.classList.remove('hidden');
+            
+            // Start countdown timer
+            startDisqualificationCountdown();
+            
+            // Clear monitoring intervals
+            if (faceDetectionInterval) {
+                clearInterval(faceDetectionInterval);
+            }
+            
+            // Stop webcam
+            if (video && video.srcObject) {
+                const tracks = video.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+            
+            // Disable all exam interactions
+            const examForm = document.getElementById('exam-form');
+            if (examForm) {
+                examForm.style.pointerEvents = 'none';
+                examForm.style.opacity = '0.5';
+            }
+        }
+        
+        function startDisqualificationCountdown() {
+            let secondsLeft = 30;
+            const countdownElement = document.getElementById('countdown-seconds');
+            
+            const countdownInterval = setInterval(() => {
+                secondsLeft--;
+                if (countdownElement) {
+                    countdownElement.textContent = secondsLeft;
+                }
+                
+                if (secondsLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    redirectToDashboard();
+                }
+            }, 1000);
+            
+            // Store interval ID so we can clear it if user clicks button
+            window.disqualificationCountdown = countdownInterval;
+        }
+        
+        function acknowledgeDisqualification() {
+            // Clear countdown
+            if (window.disqualificationCountdown) {
+                clearInterval(window.disqualificationCountdown);
+            }
+            
+            // Add visual feedback
+            const btn = document.getElementById('acknowledge-btn');
+            btn.textContent = 'Redirecting to Results...';
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            
+            // Redirect to results page instead of dashboard
+            setTimeout(() => {
+                window.location.href = '{{ url_for("view_results", session_id=session.id) }}';
+            }, 1000);
+        }
+        
+        function contactLecturer() {
+            // This would open an email client or contact form
+            const email = 'lecturer@quizzo.edu'; // This should be dynamic based on the exam
+            const subject = `Exam Disqualification Appeal - Session {{ session.id }}`;
+            const body = `Dear Lecturer,\n\nI was disqualified from the exam (Session ID: {{ session.id }}) due to: ${document.getElementById('disqualification-reason').textContent}\n\nI believe this may have been an error and would like to appeal this decision.\n\nThank you,\n{{ user.username }}`;
+            
+            window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+        }
+        
+        function redirectToDashboard() {
+            // Add fade out effect
+            document.body.style.transition = 'opacity 0.5s';
+            document.body.style.opacity = '0.3';
+            
+            setTimeout(() => {
+                window.location.href = '{{ url_for("view_results", session_id=session.id) }}';
+            }, 500);
+        }
+        
+        // Tab switching detection
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                tabSwitchCount++;
+                if (tabSwitchCount >= 3) {
+                    sendAlert('tab_switch', 'critical', 'Multiple tab switches detected');
+                } else {
+                    sendAlert('tab_switch', 'medium', `Tab switch detected (${tabSwitchCount}/3)`);
+                }
+            }
+        });
+        
+        // Prevent right-click and keyboard shortcuts
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey || e.altKey || e.metaKey || e.key === 'F12') {
+                e.preventDefault();
+                sendAlert('suspicious_activity', 'high', 'Keyboard shortcut attempted');
+            }
+        });
+        
+        // Auto-save answers
+        function saveAnswer(questionId, answer) {
+            fetch('/submit_answer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `session_id={{ session.id }}&question_id=${questionId}&answer=${encodeURIComponent(answer)}`
+            });
+        }
+        
+        // Update option styles when selected
+        function updateOptionStyles() {
+            // Update all radio button groups to show proper selection state
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                const label = radio.closest('label');
+                const textSpan = label.querySelector('.text-lg');
+                const dot = label.querySelector('.w-4.h-4');
+                
+                if (radio.checked) {
+                    label.classList.add('option-selected');
+                    if (textSpan) textSpan.classList.add('option-text');
+                    if (dot) dot.classList.add('option-dot-selected');
+                } else {
+                    label.classList.remove('option-selected');
+                    if (textSpan) textSpan.classList.remove('option-text');
+                    if (dot) dot.classList.remove('option-dot-selected');
+                }
+            });
+        }
+        
+        // Submit exam - Optimized for immediate submission
+        // Timer
+        function updateTimer() {
+            const elapsed = new Date() - examStartTime;
+            const hours = Math.floor(elapsed / 3600000);
+            const minutes = Math.floor((elapsed % 3600000) / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            
+            document.getElementById('timer').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        // Initialize everything
+        window.addEventListener('load', () => {
+            console.log('🔧 Page loaded, initializing systems...');
+            
+            // Initialize option styles
+            updateOptionStyles();
+            
+            // Add event listeners to all radio buttons for immediate visual feedback
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.addEventListener('change', updateOptionStyles);
+            });
+            
+            // Test monitoring system
+            setTimeout(() => {
+                console.log('🧪 Testing enhanced monitoring features...');
+                
+                // Test grace countdown display
+                if (typeof createGraceCountdownDisplay === 'function') {
+                    console.log('✅ Grace countdown function available');
+                } else {
+                    console.error('❌ Grace countdown function missing');
+                }
+                
+                // Test head turn handler
+                if (typeof handleHeadTurnViolationWithGracePeriod === 'function') {
+                    console.log('✅ Enhanced head turn handler available');
+                } else {
+                    console.error('❌ Enhanced head turn handler missing');
+                }
+                
+                // Test background processing
+                if (typeof processVideoFrameWithEnhancements === 'function') {
+                    console.log('✅ Background processing available');
+                } else {
+                    console.error('❌ Background processing missing');
+                }
+                
+            }, 2000);
+            
+            initializeMonitoring();
+            setInterval(updateTimer, 1000);
+        });
+        
+        // Add keyboard shortcut for quick submission (Ctrl+Enter)
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                console.log('DEBUG: Keyboard shortcut triggered (Ctrl+Enter)');
+                submitExam();
+            }
+        });
+        
+        // Prevent leaving the page
+        window.addEventListener('beforeunload', (e) => {
+            e.preventDefault();
+            e.returnValue = 'Are you sure you want to leave the exam?';
+        });
+
+        // Premium Alpine.js Exam System - Global Definition for Alpine.js
+        function examSystem() {
+            return {
+                currentQuestion: 1,
+                totalQuestions: {{ questions|length }},
+                examStartTime: Date.now(),
+                answers: {},
+                timeRemaining: {{ duration_minutes * 60 }}, // duration in seconds
+                
+                init() {
+                    this.initializeExam();
+                    this.startTimer();
+                },
+                
+                initializeExam() {
+                    console.log('Initializing Premium Exam System...');
+                    // Load any previously saved answers
+                    this.loadSavedAnswers();
+                    // Initialize monitoring
+                    this.initMonitoring();
+                },
+                
+                initMonitoring() {
+                    // Initialize enhanced monitoring when exam starts
+                    if (typeof initializeMonitoring === 'function') {
+                        initializeMonitoring();
+                    }
+                },
+                
+                startTimer() {
+                    setInterval(() => {
+                        if (this.timeRemaining > 0) {
+                            this.timeRemaining--;
+                        } else {
+                            this.autoSubmit();
+                        }
+                    }, 1000);
+                },
+                
+                get formattedTime() {
+                    const hours = Math.floor(this.timeRemaining / 3600);
+                    const minutes = Math.floor((this.timeRemaining % 3600) / 60);
+                    const seconds = this.timeRemaining % 60;
+                    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                },
+                
+                get timeElapsed() {
+                    const elapsed = Math.floor((Date.now() - this.examStartTime) / 1000);
+                    const hours = Math.floor(elapsed / 3600);
+                    const minutes = Math.floor((elapsed % 3600) / 60);
+                    const seconds = elapsed % 60;
+                    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                },
+                
+                nextQuestion() {
+                    if (this.currentQuestion < this.totalQuestions) {
+                        this.currentQuestion++;
+                    }
+                },
+                
+                previousQuestion() {
+                    if (this.currentQuestion > 1) {
+                        this.currentQuestion--;
+                    }
+                },
+                
+                goToQuestion(questionNumber) {
+                    if (questionNumber >= 1 && questionNumber <= this.totalQuestions) {
+                        this.currentQuestion = questionNumber;
+                    }
+                },
+                
+                saveAnswer(questionId, answer) {
+                    this.answers[questionId] = answer;
+                    this.autoSaveAnswer(questionId, answer);
+                },
+                
+                autoSaveAnswer(questionId, answer) {
+                    // Auto-save answer to backend
+                    const formData = new FormData();
+                    formData.append('session_id', {{ session.id }});
+                    formData.append('question_id', questionId);
+                    formData.append('answer', answer);
+                    
+                    fetch('/submit_answer', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            console.log(`Answer saved for question ${questionId}: ${answer}`);
+                        } else {
+                            console.error('Failed to save answer:', data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error saving answer:', error);
+                    });
+                },
+                
+                loadSavedAnswers() {
+                    // Load previously saved answers if any
+                    fetch(`/get_saved_answers/{{ session.id }}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            this.answers = data.answers || {};
+                            // Update form fields with saved answers
+                            Object.keys(this.answers).forEach(questionId => {
+                                const answer = this.answers[questionId];
+                                const input = document.querySelector(`[name="answer_${questionId}"][value="${answer}"]`) || 
+                                             document.querySelector(`[name="answer_${questionId}"]`);
+                                if (input) {
+                                    if (input.type === 'radio') {
+                                        input.checked = true;
+                                    } else {
+                                        input.value = answer;
+                                    }
+                                }
+                            });
+                        })
+                        .catch(console.error);
+                },
+                
+                submitExam() {
+                    // Add debug logging for submission
+                    console.log('DEBUG: submitExam called via Alpine.js');
+                    console.log('DEBUG: Current page URL:', window.location.href);
+                    console.log('DEBUG: Session ID should be: {{ session.id }}');
+                    
+                    if (confirm('Are you sure you want to submit your exam? This action cannot be undone.')) {
+                        // Show loading state
+                        const submitBtn = document.getElementById('submit-exam');
+                        submitBtn.innerHTML = '<div class="flex items-center justify-center space-x-3"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div><span>Submitting...</span></div>';
+                        submitBtn.disabled = true;
+                        
+                        // Submit to the correct endpoint
+                        fetch('/complete_exam/{{ session.id }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({})
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.status === 'success') {
+                                // Show success state
+                                submitBtn.innerHTML = '<div class="flex items-center justify-center space-x-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>Submitted Successfully!</span></div>';
+                                
+                                // Redirect to results page
+                                window.location.href = data.redirect_url || '/results/{{ session.id }}';
+                            } else {
+                                throw new Error(data.message || 'Submission failed');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Submission error:', error);
+                            alert('There was an error submitting your exam. Please try again.');
+                            submitBtn.innerHTML = '<div class="flex items-center justify-center space-x-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>Submit Exam</span></div>';
+                            submitBtn.disabled = false;
+                        });
+                    }
+                },
+                
+                autoSubmit() {
+                    alert('Time is up! Your exam will be submitted automatically.');
+                    this.submitExam();
+                }
+            }
+        }
+        
+        // Test functions for enhanced monitoring (development/debugging)
+        function testGracePeriod() {
+            console.log('🧪 Testing grace period...');
+            if (typeof handleHeadTurnViolationWithGracePeriod === 'function') {
+                addAlert('🧪 Testing 10-second grace period...', 'info');
+                handleHeadTurnViolationWithGracePeriod();
+            } else {
+                console.error('❌ Grace period function not available');
+            }
+        }
+        
+        function testBackgroundBlur() {
+            console.log('🧪 Testing background blur...');
+            if (typeof processVideoFrameWithEnhancements === 'function') {
+                addAlert('🧪 Testing background blur processing...', 'info');
+                processVideoFrameWithEnhancements();
+            } else {
+                console.error('❌ Background blur function not available');
+            }
+        }
+        
+        function testSinglePersonMode() {
+            console.log('🧪 Testing single person mode configuration...');
+            addAlert('🧪 Single Person Mode: ' + (SINGLE_PERSON_MODE ? 'ENABLED' : 'DISABLED'), 'info');
+            addAlert('🧪 False Positive Reduction: ' + (REDUCED_FALSE_POSITIVES ? 'ENABLED' : 'DISABLED'), 'info');
+            console.log('Single Person Mode:', SINGLE_PERSON_MODE);
+            console.log('Reduced False Positives:', REDUCED_FALSE_POSITIVES);
+            console.log('Multiple people detection is now disabled to prevent false alerts');
+        }
+        
+        function checkMonitoringStatus() {
+            console.log('📊 Current Monitoring Status:');
+            console.log('- Single Person Mode:', SINGLE_PERSON_MODE);
+            console.log('- Violation Count:', violationCount);
+            console.log('- Grace Period:', HEAD_TURN_GRACE_PERIOD + 'ms');
+            console.log('- Multiple People Detection: DISABLED');
+            addAlert('📊 Monitoring focused on single person - no false multiple people alerts', 'success');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,946 @@
+{% extends "base.html" %}
+
+{% block title %}{{ live_session.session_name }} - Virtual Classroom{% endblock %}
+
+{% block head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    .video-container {
+        position: relative;
+        background: #1a1a1a;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .participant-video {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        background: #2a2a2a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .main-video {
+        width: 100%;
+        height: 500px;
+        object-fit: cover;
+        background: #1a1a1a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .chat-message {
+        transition: all 0.3s ease;
+    }
+    
+    .chat-message:hover {
+        background: rgba(99, 102, 241, 0.1);
+    }
+    
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        min-width: 300px;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+    }
+    
+    .notification.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    
+    .h-screen-minus-header {
+        height: calc(100vh - 88px);
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-900" id="sessionContainer">
+
+    <!-- Top Bar -->
+    <div class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-video text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white">{{ live_session.session_name }}</h1>
+                    <div class="flex items-center space-x-4 text-sm text-gray-300">
+                        <span>
+                            <i class="fas fa-users mr-1"></i>
+                            <span id="participantCount">{{ participants|length }}</span> participants
+                        </span>
+                        <span>
+                            <i class="fas fa-clock mr-1"></i>
+                            <span id="sessionDuration">00:00</span>
+                        </span>
+                        <span class="flex items-center">
+                            <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></div>
+                            LIVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <!-- Media Controls -->
+                <button id="cameraBtn" onclick="toggleCamera()"
+                        class="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-105 bg-white text-gray-800">
+                    <i id="cameraIcon" class="fas fa-video"></i>
+                </button>
+                
+                <button id="micBtn" onclick="toggleMicrophone()"
+                        class="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-105 bg-white text-gray-800">
+                    <i id="micIcon" class="fas fa-microphone"></i>
+                </button>
+                
+                <button onclick="toggleChat()"
+                        class="w-10 h-10 bg-indigo-600 text-white rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-105">
+                    <i class="fas fa-comments"></i>
+                </button>
+                
+                {% if is_host %}
+                <button onclick="endSession()" 
+                        class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200">
+                    <i class="fas fa-stop mr-2"></i>End Session
+                </button>
+                {% else %}
+                <button onclick="leaveSession()" 
+                        class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Leave
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex h-screen-minus-header">
+        <!-- Video Area -->
+        <div class="flex-1 p-6" id="videoArea">
+            <!-- Main Video -->
+            <div class="mb-6">
+                <div class="video-container relative">
+                    <!-- Main video stream (remote teacher/presenter) -->
+                    <video id="mainVideo" class="main-video" autoplay playsinline></video>
+                    
+                    <!-- Video placeholder when no stream -->
+                    <div id="mainVideoPlaceholder" class="main-video flex flex-col items-center justify-center text-white">
+                        <div class="w-20 h-20 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-user text-3xl"></i>
+                        </div>
+                        <p class="text-lg font-medium">{{ teacher.username }} (Host)</p>
+                        <p class="text-sm text-gray-400">Waiting for video stream...</p>
+                    </div>
+                    
+                    <!-- Local video preview (small corner video) -->
+                    <div class="absolute bottom-4 right-4 w-48 h-36 z-10">
+                        <video id="localVideo" class="w-full h-full rounded-lg border-2 border-white/20" autoplay muted playsinline></video>
+                        <div id="localVideoPlaceholder" class="w-full h-full rounded-lg bg-gray-700 border-2 border-white/20 flex items-center justify-center text-gray-400">
+                            <i class="fas fa-user text-2xl"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Video status overlay -->
+                    <div class="absolute top-4 left-4 bg-black/60 rounded-lg px-3 py-2">
+                        <div class="flex items-center space-x-2 text-white text-sm">
+                            <div id="connectionStatus" class="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <span id="connectionText">Connecting...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Participant Videos Grid -->
+            <div id="participantGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {% for participant in participants %}
+                <div class="video-container relative" data-participant-id="{{ participant.id }}">
+                    <div class="participant-video">
+                        <div class="text-center text-white">
+                            <div class="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <span class="text-white font-bold">{{ participant.username[0].upper() }}</span>
+                            </div>
+                            <p class="text-sm font-medium">{{ participant.username }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Participant Info -->
+                    <div class="absolute bottom-2 left-2 right-2">
+                        <div class="bg-black/60 rounded-lg px-2 py-1">
+                            <div class="flex items-center justify-between">
+                                <span class="text-white text-xs font-medium">{{ participant.username }}</span>
+                                <div class="flex items-center space-x-1">
+                                    <i class="fas {{ 'fa-microphone text-green-400' if participant.microphone_enabled else 'fa-microphone-slash text-red-400' }} text-xs"></i>
+                                    <i class="fas {{ 'fa-video text-green-400' if participant.camera_enabled else 'fa-video-slash text-red-400' }} text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Participants Count -->
+            <div id="extraParticipantsCount" class="mt-4 text-center hidden">
+                <div class="inline-flex items-center space-x-2 bg-gray-700 text-white px-4 py-2 rounded-lg">
+                    <i class="fas fa-users"></i>
+                    <span id="extraCount">+0 more participants</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat Sidebar -->
+        <div id="chatSidebar" class="w-80 bg-gray-800 border-l border-gray-700 flex-col hidden">
+            <!-- Chat Header -->
+            <div class="p-4 border-b border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-white font-semibold">Session Chat</h3>
+                    <button onclick="toggleChat()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Messages -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-3" id="chatMessages">
+                <div class="text-center text-gray-400 py-8">
+                    <i class="fas fa-comments text-3xl mb-2"></i>
+                    <p>No messages yet. Start the conversation!</p>
+                </div>
+            </div>
+            
+            <!-- Message Input -->
+            <div class="p-4 border-t border-gray-700">
+                <form id="chatForm" onsubmit="sendMessage(event)" class="flex space-x-2">
+                    <input type="text" id="messageInput" 
+                           class="flex-1 bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                           placeholder="Type a message..." maxlength="500">
+                    <button type="submit" 
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Container -->
+<div id="notificationContainer"></div>
+
+<script>
+// WebRTC Configuration
+const rtcConfiguration = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+};
+
+// Global variables for WebRTC
+let localStream = null;
+let remoteStream = null;
+let peerConnection = null;
+let isInitiator = false;
+
+// Session data
+const sessionData = {
+    sessionId: {{ live_session.id }},
+    isHost: {{ 'true' if is_host else 'false' }},
+    participants: {{ participants | tojson | safe }},
+    messages: [],
+    showChat: false,
+    cameraEnabled: false,
+    microphoneEnabled: false,
+    sessionDuration: '00:00',
+    startTime: new Date('{{ live_session.started_at.isoformat() if live_session.started_at else datetime.now(timezone.utc).isoformat() }}')
+};
+
+// Initialize session
+async function initSession() {
+    console.log('Initializing live session with WebRTC...');
+    console.log('Session data:', sessionData);
+    
+    // Initialize WebRTC
+    await initWebRTC();
+    
+    // Auto-enable media for hosts
+    if (sessionData.isHost) {
+        await autoEnableHostMedia();
+    }
+    
+    // Update participant count
+    updateParticipantCount();
+    
+    // Start duration timer
+    updateSessionDuration();
+    setInterval(updateSessionDuration, 1000);
+    
+    // Auto-refresh participants every 10 seconds
+    setInterval(updateParticipants, 10000);
+    
+    // Load chat messages
+    loadMessages();
+    
+    showNotification('success', 'Welcome to the session!');
+}
+
+// Initialize WebRTC
+async function initWebRTC() {
+    try {
+        console.log('Setting up WebRTC...');
+        
+        // Create peer connection
+        peerConnection = new RTCPeerConnection(rtcConfiguration);
+        
+        // Handle remote stream
+        peerConnection.ontrack = (event) => {
+            console.log('Received remote stream');
+            remoteStream = event.streams[0];
+            const mainVideo = document.getElementById('mainVideo');
+            const placeholder = document.getElementById('mainVideoPlaceholder');
+            
+            if (mainVideo && remoteStream) {
+                mainVideo.srcObject = remoteStream;
+                mainVideo.style.display = 'block';
+                if (placeholder) placeholder.style.display = 'none';
+                updateConnectionStatus('connected', 'Connected');
+            }
+        };
+        
+        // Handle ICE candidates
+        peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+                console.log('Sending ICE candidate');
+                // Send ICE candidate to remote peer via signaling server
+                sendSignalingMessage({
+                    type: 'ice-candidate',
+                    candidate: event.candidate
+                });
+            }
+        };
+        
+        // Handle connection state changes
+        peerConnection.onconnectionstatechange = () => {
+            console.log('Connection state:', peerConnection.connectionState);
+            switch (peerConnection.connectionState) {
+                case 'connected':
+                    updateConnectionStatus('connected', 'Connected');
+                    break;
+                case 'disconnected':
+                    updateConnectionStatus('disconnected', 'Disconnected');
+                    break;
+                case 'failed':
+                    updateConnectionStatus('failed', 'Connection Failed');
+                    break;
+                case 'connecting':
+                    updateConnectionStatus('connecting', 'Connecting...');
+                    break;
+            }
+        };
+        
+        updateConnectionStatus('ready', 'Ready');
+        console.log('WebRTC initialized successfully');
+        
+    } catch (error) {
+        console.error('Error initializing WebRTC:', error);
+        updateConnectionStatus('error', 'Setup Error');
+        showNotification('error', 'Failed to initialize video call');
+    }
+}
+
+// Get user media (camera and microphone)
+async function getUserMedia(video = true, audio = true) {
+    try {
+        console.log(`Requesting user media - Video: ${video}, Audio: ${audio}`);
+        
+        // Check if browser supports getUserMedia
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('Your browser does not support camera/microphone access');
+        }
+        
+        const constraints = {
+            video: video ? {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: 'user'
+            } : false,
+            audio: audio ? {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            } : false
+        };
+        
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log('Got user media stream');
+        
+        // Update local stream
+        localStream = stream;
+        
+        // Display local video
+        const localVideo = document.getElementById('localVideo');
+        const localPlaceholder = document.getElementById('localVideoPlaceholder');
+        
+        if (localVideo && stream) {
+            localVideo.srcObject = stream;
+            localVideo.style.display = 'block';
+            if (localPlaceholder) localPlaceholder.style.display = 'none';
+        }
+        
+        // Add stream to peer connection
+        if (peerConnection) {
+            stream.getTracks().forEach(track => {
+                console.log('Adding track to peer connection:', track.kind);
+                peerConnection.addTrack(track, stream);
+            });
+        }
+        
+        // Show success message
+        const mediaTypes = [];
+        if (video) mediaTypes.push('camera');
+        if (audio) mediaTypes.push('microphone');
+        showNotification('success', `${mediaTypes.join(' and ')} access granted`, 3000);
+        
+        return stream;
+        
+    } catch (error) {
+        console.error('Error accessing user media:', error);
+        
+        // Handle specific error cases
+        let errorMessage = 'Failed to access media';
+        if (error.name === 'NotAllowedError') {
+            errorMessage = 'Camera/microphone access denied. Please allow access and try again.';
+        } else if (error.name === 'NotFoundError') {
+            errorMessage = 'Camera or microphone not found. Please check your devices.';
+        } else if (error.name === 'NotReadableError') {
+            errorMessage = 'Camera/microphone is already in use by another application.';
+        } else if (error.name === 'OverconstrainedError') {
+            errorMessage = 'Camera/microphone constraints cannot be satisfied.';
+        } else {
+            errorMessage = `Media error: ${error.message}`;
+        }
+        
+        showNotification('error', errorMessage, 8000);
+        throw error;
+    }
+}
+
+// Auto-enable media for hosts
+async function autoEnableHostMedia() {
+    if (!sessionData.isHost) return;
+    
+    showNotification('info', 'Setting up camera and microphone for host...', 3000);
+    
+    try {
+        // Auto-enable camera and microphone for hosts
+        await getUserMedia(true, true);
+        sessionData.cameraEnabled = true;
+        sessionData.microphoneEnabled = true;
+        updateCameraButton(true);
+        updateMicrophoneButton(true);
+        showNotification('success', 'Host media enabled successfully');
+    } catch (error) {
+        console.error('Error enabling host media:', error);
+        showNotification('error', 'Failed to enable camera/microphone');
+    }
+}
+
+// Toggle camera with WebRTC
+async function toggleCamera() {
+    try {
+        console.log('Toggling camera, current state:', sessionData.cameraEnabled);
+        
+        if (!sessionData.cameraEnabled) {
+            // Enable camera
+            if (!localStream) {
+                await getUserMedia(true, sessionData.microphoneEnabled);
+            } else {
+                // Add video track if not present
+                const videoTrack = localStream.getVideoTracks()[0];
+                if (!videoTrack) {
+                    const newStream = await getUserMedia(true, false);
+                    const videoTrack = newStream.getVideoTracks()[0];
+                    localStream.addTrack(videoTrack);
+                    
+                    // Add to peer connection
+                    if (peerConnection) {
+                        peerConnection.addTrack(videoTrack, localStream);
+                    }
+                }
+            }
+            sessionData.cameraEnabled = true;
+            showNotification('success', 'Camera enabled');
+        } else {
+            // Disable camera
+            if (localStream) {
+                const videoTracks = localStream.getVideoTracks();
+                videoTracks.forEach(track => {
+                    track.stop();
+                    localStream.removeTrack(track);
+                    
+                    // Remove from peer connection
+                    if (peerConnection) {
+                        const sender = peerConnection.getSenders().find(s => s.track === track);
+                        if (sender) {
+                            peerConnection.removeTrack(sender);
+                        }
+                    }
+                });
+            }
+            
+            // Hide local video
+            const localVideo = document.getElementById('localVideo');
+            const localPlaceholder = document.getElementById('localVideoPlaceholder');
+            if (localVideo) localVideo.style.display = 'none';
+            if (localPlaceholder) localPlaceholder.style.display = 'flex';
+            
+            sessionData.cameraEnabled = false;
+            showNotification('success', 'Camera disabled');
+        }
+        
+        updateCameraButton(sessionData.cameraEnabled);
+        
+        // Update server state
+        await updateServerMediaState();
+        
+    } catch (error) {
+        console.error('Error toggling camera:', error);
+        showNotification('error', `Camera error: ${error.message}`);
+    }
+}
+
+// Toggle microphone with WebRTC
+async function toggleMicrophone() {
+    try {
+        console.log('Toggling microphone, current state:', sessionData.microphoneEnabled);
+        
+        if (!sessionData.microphoneEnabled) {
+            // Enable microphone
+            if (!localStream) {
+                await getUserMedia(sessionData.cameraEnabled, true);
+            } else {
+                // Add audio track if not present
+                const audioTrack = localStream.getAudioTracks()[0];
+                if (!audioTrack) {
+                    const newStream = await getUserMedia(false, true);
+                    const audioTrack = newStream.getAudioTracks()[0];
+                    localStream.addTrack(audioTrack);
+                    
+                    // Add to peer connection
+                    if (peerConnection) {
+                        peerConnection.addTrack(audioTrack, localStream);
+                    }
+                }
+            }
+            sessionData.microphoneEnabled = true;
+            showNotification('success', 'Microphone enabled');
+        } else {
+            // Disable microphone
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                audioTracks.forEach(track => {
+                    track.stop();
+                    localStream.removeTrack(track);
+                    
+                    // Remove from peer connection
+                    if (peerConnection) {
+                        const sender = peerConnection.getSenders().find(s => s.track === track);
+                        if (sender) {
+                            peerConnection.removeTrack(sender);
+                        }
+                    }
+                });
+            }
+            sessionData.microphoneEnabled = false;
+            showNotification('success', 'Microphone disabled');
+        }
+        
+        updateMicrophoneButton(sessionData.microphoneEnabled);
+        
+        // Update server state
+        await updateServerMediaState();
+        
+    } catch (error) {
+        console.error('Error toggling microphone:', error);
+        showNotification('error', `Microphone error: ${error.message}`);
+    }
+}
+
+// Update server with current media state
+async function updateServerMediaState() {
+    try {
+        const response = await fetch(`/api/session/${sessionData.sessionId}/update_media`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                camera_enabled: sessionData.cameraEnabled,
+                microphone_enabled: sessionData.microphoneEnabled
+            })
+        });
+        
+        const data = await response.json();
+        if (!data.success) {
+            console.error('Failed to update server media state:', data.error);
+        }
+    } catch (error) {
+        console.error('Error updating server media state:', error);
+    }
+}
+
+// Send signaling message (WebRTC)
+async function sendSignalingMessage(message) {
+    try {
+        const response = await fetch(`/api/session/${sessionData.sessionId}/signaling`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(message)
+        });
+        
+        const data = await response.json();
+        if (!data.success) {
+            console.error('Failed to send signaling message:', data.error);
+        }
+    } catch (error) {
+        console.error('Error sending signaling message:', error);
+    }
+}
+
+// Update connection status
+function updateConnectionStatus(status, text) {
+    const statusEl = document.getElementById('connectionStatus');
+    const textEl = document.getElementById('connectionText');
+    
+    if (statusEl && textEl) {
+        textEl.textContent = text;
+        
+        // Update status indicator color
+        statusEl.className = 'w-2 h-2 rounded-full';
+        switch (status) {
+            case 'connected':
+                statusEl.classList.add('bg-green-500');
+                break;
+            case 'connecting':
+                statusEl.classList.add('bg-yellow-500', 'animate-pulse');
+                break;
+            case 'disconnected':
+            case 'failed':
+                statusEl.classList.add('bg-red-500');
+                break;
+            default:
+                statusEl.classList.add('bg-gray-500');
+        }
+    }
+}
+
+// Update participant count
+function updateParticipantCount() {
+    const count = sessionData.participants.length;
+    document.getElementById('participantCount').textContent = count;
+    
+    // Show extra participants count if more than 8
+    const extraCount = Math.max(0, count - 8);
+    const extraDiv = document.getElementById('extraParticipantsCount');
+    if (extraCount > 0) {
+        document.getElementById('extraCount').textContent = `+${extraCount} more participants`;
+        extraDiv.classList.remove('hidden');
+    } else {
+        extraDiv.classList.add('hidden');
+    }
+}
+
+// Update session duration
+function updateSessionDuration() {
+    const now = new Date();
+    const diff = Math.floor((now - sessionData.startTime) / 1000);
+    const hours = Math.floor(diff / 3600);
+    const minutes = Math.floor((diff % 3600) / 60);
+    const seconds = diff % 60;
+    
+    const duration = hours > 0 
+        ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+        : `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    document.getElementById('sessionDuration').textContent = duration;
+}
+
+// Update camera button appearance
+function updateCameraButton(enabled) {
+    const btn = document.getElementById('cameraBtn');
+    const icon = document.getElementById('cameraIcon');
+    
+    if (enabled) {
+        btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-105 bg-white text-gray-800';
+        icon.className = 'fas fa-video';
+    } else {
+        btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-105 bg-red-500 text-white';
+        icon.className = 'fas fa-video-slash';
+    }
+}
+
+// Update microphone button appearance
+function updateMicrophoneButton(enabled) {
+    const btn = document.getElementById('micBtn');
+    const icon = document.getElementById('micIcon');
+    
+    if (enabled) {
+        btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-105 bg-white text-gray-800';
+        icon.className = 'fas fa-microphone';
+    } else {
+        btn.className = 'w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-105 bg-red-500 text-white';
+        icon.className = 'fas fa-microphone-slash';
+    }
+}
+
+// Toggle chat
+function toggleChat() {
+    sessionData.showChat = !sessionData.showChat;
+    const chatSidebar = document.getElementById('chatSidebar');
+    
+    if (sessionData.showChat) {
+        chatSidebar.classList.remove('hidden');
+        chatSidebar.classList.add('flex');
+        loadMessages();
+    } else {
+        chatSidebar.classList.add('hidden');
+        chatSidebar.classList.remove('flex');
+    }
+}
+
+// Send message
+async function sendMessage(event) {
+    event.preventDefault();
+    
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value.trim();
+    
+    if (!message) return;
+    
+    try {
+        const response = await fetch(`/api/session/${sessionData.sessionId}/message`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message: message })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            messageInput.value = '';
+            loadMessages(); // Refresh messages
+        } else {
+            throw new Error(data.error || 'Failed to send message');
+        }
+    } catch (error) {
+        console.error('Error sending message:', error);
+        showNotification('error', `Error: ${error.message}`);
+    }
+}
+
+// Load messages
+async function loadMessages() {
+    try {
+        const response = await fetch(`/api/session/${sessionData.sessionId}/messages`);
+        const data = await response.json();
+        
+        if (data.success) {
+            sessionData.messages = data.messages;
+            renderMessages();
+        }
+    } catch (error) {
+        console.error('Error loading messages:', error);
+    }
+}
+
+// Render messages
+function renderMessages() {
+    const container = document.getElementById('chatMessages');
+    
+    if (sessionData.messages.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-gray-400 py-8">
+                <i class="fas fa-comments text-3xl mb-2"></i>
+                <p>No messages yet. Start the conversation!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = sessionData.messages.map(message => `
+        <div class="chat-message p-3 rounded-lg ${message.is_own ? 'bg-indigo-600 ml-4' : 'bg-gray-700 mr-4'}">
+            <div class="flex items-start space-x-2">
+                <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${message.is_own ? 'bg-indigo-500 text-white' : 'bg-gray-600 text-white'}">
+                    ${message.username[0].toUpperCase()}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center space-x-2 mb-1">
+                        <span class="text-sm font-medium ${message.is_own ? 'text-white' : 'text-gray-200'}">
+                            ${message.username}
+                        </span>
+                        <span class="text-xs ${message.is_own ? 'text-indigo-200' : 'text-gray-400'}">
+                            ${formatTime(message.sent_at)}
+                        </span>
+                    </div>
+                    <p class="text-sm ${message.is_own ? 'text-white' : 'text-gray-100'}">
+                        ${message.message}
+                    </p>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
+}
+
+// Update participants with join/leave notifications
+async function updateParticipants() {
+    try {
+        const response = await fetch(`/api/session/${sessionData.sessionId}/participants`);
+        const data = await response.json();
+        
+        if (data.participants) {
+            const oldCount = sessionData.participants.length;
+            sessionData.participants = data.participants;
+            const newCount = sessionData.participants.length;
+            
+            // Show notification for participant changes
+            if (newCount > oldCount) {
+                showNotification('info', `${newCount - oldCount} participant(s) joined`);
+            } else if (newCount < oldCount) {
+                showNotification('info', `${oldCount - newCount} participant(s) left`);
+            }
+            
+            updateParticipantCount();
+        }
+    } catch (error) {
+        console.error('Error updating participants:', error);
+    }
+}
+
+// End session
+async function endSession() {
+    if (!confirm('Are you sure you want to end this session? All participants will be disconnected.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/session/${sessionData.sessionId}/end`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            showNotification('success', 'Session ended successfully');
+            setTimeout(() => {
+                window.location.href = '/virtual-classroom';
+            }, 2000);
+        } else {
+            throw new Error(data.error || 'Failed to end session');
+        }
+    } catch (error) {
+        console.error('Error ending session:', error);
+        showNotification('error', `Error: ${error.message}`);
+    }
+}
+
+// Leave session
+async function leaveSession() {
+    if (!confirm('Are you sure you want to leave this session?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/session/${sessionData.sessionId}/leave`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            showNotification('success', 'Left session successfully');
+            setTimeout(() => {
+                window.location.href = '/virtual-classroom';
+            }, 1000);
+        } else {
+            throw new Error(data.error || 'Failed to leave session');
+        }
+    } catch (error) {
+        console.error('Error leaving session:', error);
+        showNotification('error', `Error: ${error.message}`);
+    }
+}
+
+// Utility functions
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function showNotification(type, message, duration = 5000) {
+    const container = document.getElementById('notificationContainer');
+    const notification = document.createElement('div');
+    
+    notification.className = `notification px-6 py-4 rounded-lg shadow-lg ${
+        type === 'success' ? 'bg-green-500 text-white' : 
+        type === 'error' ? 'bg-red-500 text-white' : 
+        'bg-blue-500 text-white'
+    }`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    container.appendChild(notification);
+    
+    // Show notification
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    // Hide and remove notification
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, duration);
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Live session room loaded');
+    initSession();
+});
+
+// Handle page unload (leave session)
+window.addEventListener('beforeunload', function() {
+    if (sessionData.sessionId) {
+        navigator.sendBeacon(`/api/session/${sessionData.sessionId}/leave`, JSON.stringify({}));
+    }
+});
+</script>
+
+{% endblock %}

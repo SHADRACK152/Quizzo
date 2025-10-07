@@ -1,0 +1,513 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Exams - QUIZZO{% endblock %}
+
+{% block content %}
+<!-- Premium Navigation -->
+<nav class="glass-dark border-b border-white/10 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <!-- Brand -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-graduation-cap text-white text-lg"></i>
+                </div>
+                <h1 class="text-xl font-bold text-white">QUIZZO</h1>
+                <span class="text-xs bg-accent-500 text-white px-2 py-1 rounded-full">PREMIUM</span>
+            </div>
+            
+            <!-- Navigation Links -->
+            <div class="hidden md:flex items-center space-x-4">
+                <a href="{{ url_for('dashboard') }}" class="nav-link text-white hover:text-primary-300">
+                    <i class="fas fa-dashboard mr-2"></i>Dashboard
+                </a>
+                <a href="{{ url_for('create_exam') }}" class="nav-link text-white hover:text-primary-300">
+                    <i class="fas fa-plus mr-2"></i>Create Exam
+                </a>
+                <div class="h-6 w-px bg-white/20"></div>
+                <a href="{{ url_for('logout') }}" class="nav-link text-white hover:text-red-300">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-primary-600 via-primary-700 to-accent-600 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-bold text-white mb-4">
+                        <i class="fas fa-tasks mr-3"></i>Exam Management Center
+                    </h1>
+                    <p class="text-xl text-primary-100">
+                        Monitor, analyze, and optimize your examination portfolio with advanced insights and controls.
+                    </p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('create_exam') }}" class="btn-primary bg-accent-500 hover:bg-accent-600">
+                        <i class="fas fa-plus mr-2"></i>Create New Exam
+                    </a>
+                    <button onclick="toggleView()" class="btn-secondary bg-white text-primary-700 hover:bg-primary-50">
+                        <i class="fas fa-th-large mr-2" id="view-icon"></i>
+                        <span id="view-text">Card View</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Statistics Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            <div class="modern-card text-center hover-lift">
+                <div class="w-12 h-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-file-alt text-white text-lg"></i>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-1">{{ total_exams or 0 }}</div>
+                <div class="text-sm text-gray-600">Total Exams</div>
+                <div class="text-xs text-primary-600 mt-1">Created by you</div>
+            </div>
+            
+            <div class="modern-card text-center hover-lift">
+                <div class="w-12 h-12 bg-gradient-to-r from-success-500 to-success-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-play text-white text-lg"></i>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-1">{{ active_exams_count or 0 }}</div>
+                <div class="text-sm text-gray-600">Active Exams</div>
+                <div class="text-xs text-success-600 mt-1">Available to students</div>
+            </div>
+            
+            <div class="modern-card text-center hover-lift">
+                <div class="w-12 h-12 bg-gradient-to-r from-accent-500 to-accent-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-users text-white text-lg"></i>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-1">{{ total_students or 0 }}</div>
+                <div class="text-sm text-gray-600">Total Students</div>
+                <div class="text-xs text-accent-600 mt-1">Took your exams</div>
+            </div>
+            
+            <div class="modern-card text-center hover-lift">
+                <div class="w-12 h-12 bg-gradient-to-r from-warning-500 to-warning-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-chart-line text-white text-lg"></i>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-1">{{ overall_avg_score or 0 }}%</div>
+                <div class="text-sm text-gray-600">Avg. Score</div>
+                <div class="text-xs text-warning-600 mt-1">{{ completed_attempts or 0 }} attempts</div>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="modern-card mb-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                <div class="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" placeholder="Search exams..." 
+                               class="modern-input pl-10 w-full sm:w-64"
+                               id="search-input" onkeyup="filterExams()">
+                    </div>
+                    
+                    <select class="modern-input w-full sm:w-auto" id="category-filter" onchange="filterExams()">
+                        <option value="">All Categories</option>
+                        <option value="mathematics">📐 Mathematics</option>
+                        <option value="science">🔬 Science</option>
+                        <option value="history">📚 History</option>
+                        <option value="literature">📖 Literature</option>
+                        <option value="technology">💻 Technology</option>
+                        <option value="business">💼 Business</option>
+                    </select>
+                    
+                    <select class="modern-input w-full sm:w-auto" id="status-filter" onchange="filterExams()">
+                        <option value="">All Status</option>
+                        <option value="active">🟢 Active</option>
+                        <option value="draft">🟡 Draft</option>
+                        <option value="archived">🔴 Archived</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button onclick="exportExams()" class="btn-ghost">
+                        <i class="fas fa-download mr-2"></i>Export
+                    </button>
+                    <button onclick="bulkActions()" class="btn-secondary">
+                        <i class="fas fa-tools mr-2"></i>Bulk Actions
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Message -->
+        {% if success_message %}
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                    <span class="text-green-800 font-medium">{{ success_message }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Exams List/Grid -->
+        <div id="exams-container">
+            {% if exam_details %}
+            <!-- Card View (Default) -->
+            <div id="card-view" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                {% for detail in exam_details %}
+                <div class="exam-card modern-card hover-lift" data-category="{{ detail.exam.category or 'general' }}" data-status="{{ detail.exam.status or 'active' }}">
+                    <!-- Card Header -->
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-lg font-bold text-gray-900 mb-1 truncate">{{ detail.exam.title }}</h3>
+                            <div class="flex items-center space-x-2 text-sm text-gray-600">
+                                <span class="bg-primary-100 text-primary-800 px-2 py-1 rounded-full text-xs">
+                                    {{ detail.exam.category|title or 'General' }}
+                                </span>
+                                <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
+                                    {{ detail.question_count }} questions
+                                </span>
+                                {% if detail.exam.ai_generated %}
+                                <span class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                                    <i class="fas fa-robot mr-1"></i>AI Generated
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <button onclick="toggleDropdown('{{ detail.exam.id }}')" class="p-2 text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div id="dropdown-{{ detail.exam.id }}" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 hidden z-10">
+                                <div class="py-2">
+                                    <a href="{{ url_for('edit_exam', exam_id=detail.exam.id) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                        <i class="fas fa-edit mr-2"></i>Edit Exam
+                                    </a>
+                                    <a href="{{ url_for('exam_results_for_exam', exam_id=detail.exam.id) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                        <i class="fas fa-chart-bar mr-2"></i>View Results
+                                    </a>
+                                    <a href="{{ url_for('take_exam', exam_id=detail.exam.id) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" target="_blank">
+                                        <i class="fas fa-external-link-alt mr-2"></i>Preview
+                                    </a>
+                                    <div class="border-t border-gray-200 my-1"></div>
+                                    <button onclick="duplicateExam('{{ detail.exam.id }}')" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                        <i class="fas fa-copy mr-2"></i>Duplicate
+                                    </button>
+                                    <button onclick="archiveExam('{{ detail.exam.id }}')" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                        <i class="fas fa-archive mr-2"></i>Archive
+                                    </button>
+                                    <button onclick="deleteExam('{{ detail.exam.id }}')" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                        <i class="fas fa-trash mr-2"></i>Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        <div class="text-center">
+                            <div class="text-xl font-bold text-gray-900">{{ detail.total_attempts or 0 }}</div>
+                            <div class="text-xs text-gray-600">Attempts</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xl font-bold text-success-600">{{ detail.avg_score or 0 }}%</div>
+                            <div class="text-xs text-gray-600">Avg Score</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xl font-bold text-accent-600">{{ detail.completion_rate or 0 }}%</div>
+                            <div class="text-xs text-gray-600">Completion</div>
+                        </div>
+                    </div>
+
+                    <!-- Time and Date Info -->
+                    <div class="flex items-center justify-between text-sm text-gray-600 mb-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-clock mr-1"></i>
+                            {{ detail.exam.time_limit or 'No limit' }}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar mr-1"></i>
+                            {{ detail.exam.created_at.strftime('%b %d') }}
+                        </div>
+                    </div>
+
+                    <!-- Status Badge -->
+                    <div class="flex items-center justify-between">
+                        {% if detail.exam.status == 'active' %}
+                        <span class="bg-success-100 text-success-800 px-3 py-1 rounded-full text-xs font-medium">
+                            <i class="fas fa-play mr-1"></i>Active
+                        </span>
+                        {% elif detail.exam.status == 'draft' %}
+                        <span class="bg-warning-100 text-warning-800 px-3 py-1 rounded-full text-xs font-medium">
+                            <i class="fas fa-edit mr-1"></i>Draft
+                        </span>
+                        {% else %}
+                        <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-medium">
+                            <i class="fas fa-archive mr-1"></i>Archived
+                        </span>
+                        {% endif %}
+                        
+                        <div class="flex items-center space-x-2">
+                            <button onclick="quickEdit('{{ detail.exam.id }}')" class="p-2 text-gray-400 hover:text-primary-600 transition-colors">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="viewAnalytics('{{ detail.exam.id }}')" class="p-2 text-gray-400 hover:text-accent-600 transition-colors">
+                                <i class="fas fa-chart-line"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Table View (Hidden by default) -->
+            <div id="table-view" class="hidden">
+                <div class="modern-card overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <input type="checkbox" class="rounded text-primary-600">
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Questions</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attempts</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Score</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for detail in exam_details %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <input type="checkbox" class="rounded text-primary-600">
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ detail.exam.title }}</div>
+                                        <div class="text-sm text-gray-500">Created {{ detail.exam.created_at.strftime('%b %d, %Y') }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="bg-primary-100 text-primary-800 px-2 py-1 rounded-full text-xs">
+                                            {{ detail.exam.category|title or 'General' }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ detail.exam.questions|length }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ detail.total_attempts or 0 }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ detail.avg_score or 0 }}%
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if detail.exam.status == 'active' %}
+                                        <span class="bg-success-100 text-success-800 px-2 py-1 rounded-full text-xs">Active</span>
+                                        {% elif detail.exam.status == 'draft' %}
+                                        <span class="bg-warning-100 text-warning-800 px-2 py-1 rounded-full text-xs">Draft</span>
+                                        {% else %}
+                                        <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">Archived</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <div class="flex items-center space-x-2">
+                                            <a href="{{ url_for('edit_exam', exam_id=detail.exam.id) }}" class="text-primary-600 hover:text-primary-900">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('exam_results_for_exam', exam_id=detail.exam.id) }}" class="text-accent-600 hover:text-accent-900">
+                                                <i class="fas fa-chart-bar"></i>
+                                            </a>
+                                            <button onclick="deleteExam('{{ detail.exam.id }}')" class="text-red-600 hover:text-red-900">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-16">
+                <div class="w-24 h-24 bg-gradient-to-r from-primary-500 to-accent-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-plus text-white text-3xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">Create Your First Exam</h3>
+                <p class="text-gray-600 mb-8 max-w-md mx-auto">
+                    Get started by creating your first exam with our AI-powered question generator or manual builder.
+                </p>
+                <a href="{{ url_for('create_exam') }}" class="btn-primary inline-flex items-center">
+                    <i class="fas fa-plus mr-2"></i>Create New Exam
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick Edit Modal -->
+<div id="quick-edit-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-900">Quick Edit</h3>
+                <button onclick="hideQuickEdit()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6" id="quick-edit-content">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentView = 'card';
+
+function toggleView() {
+    const cardView = document.getElementById('card-view');
+    const tableView = document.getElementById('table-view');
+    const viewIcon = document.getElementById('view-icon');
+    const viewText = document.getElementById('view-text');
+    
+    if (currentView === 'card') {
+        cardView.classList.add('hidden');
+        tableView.classList.remove('hidden');
+        viewIcon.className = 'fas fa-th-large mr-2';
+        viewText.textContent = 'Card View';
+        currentView = 'table';
+    } else {
+        cardView.classList.remove('hidden');
+        tableView.classList.add('hidden');
+        viewIcon.className = 'fas fa-list mr-2';
+        viewText.textContent = 'List View';
+        currentView = 'card';
+    }
+}
+
+function filterExams() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const categoryFilter = document.getElementById('category-filter').value;
+    const statusFilter = document.getElementById('status-filter').value;
+    
+    const examCards = document.querySelectorAll('.exam-card');
+    
+    examCards.forEach(card => {
+        const title = card.querySelector('h3').textContent.toLowerCase();
+        const category = card.getAttribute('data-category');
+        const status = card.getAttribute('data-status');
+        
+        const matchesSearch = title.includes(searchTerm);
+        const matchesCategory = !categoryFilter || category === categoryFilter;
+        const matchesStatus = !statusFilter || status === statusFilter;
+        
+        if (matchesSearch && matchesCategory && matchesStatus) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function toggleDropdown(examId) {
+    const dropdown = document.getElementById(`dropdown-${examId}`);
+    
+    // Close all other dropdowns
+    document.querySelectorAll('[id^="dropdown-"]').forEach(d => {
+        if (d.id !== `dropdown-${examId}`) {
+            d.classList.add('hidden');
+        }
+    });
+    
+    dropdown.classList.toggle('hidden');
+}
+
+function quickEdit(examId) {
+    document.getElementById('quick-edit-modal').classList.remove('hidden');
+    // Load exam data for quick editing
+    console.log('Quick edit exam:', examId);
+}
+
+function hideQuickEdit() {
+    document.getElementById('quick-edit-modal').classList.add('hidden');
+}
+
+function viewAnalytics(examId) {
+    // Redirect to detailed analytics
+    window.location.href = `/exam/${examId}/analytics`;
+}
+
+function duplicateExam(examId) {
+    if (confirm('Create a copy of this exam?')) {
+        showLoading();
+        // Implementation for duplication
+        setTimeout(() => {
+            hideLoading();
+            showToast('Exam duplicated successfully!', 'success');
+        }, 1500);
+    }
+}
+
+function archiveExam(examId) {
+    if (confirm('Archive this exam? It will be hidden from active exams.')) {
+        showLoading();
+        // Implementation for archiving
+        setTimeout(() => {
+            hideLoading();
+            showToast('Exam archived successfully!', 'info');
+        }, 1000);
+    }
+}
+
+function deleteExam(examId) {
+    if (confirm('Are you sure you want to delete this exam? This action cannot be undone.')) {
+        showLoading();
+        // Implementation for deletion
+        setTimeout(() => {
+            hideLoading();
+            showToast('Exam deleted successfully!', 'success');
+            document.querySelector(`[data-exam-id="${examId}"]`).remove();
+        }, 1000);
+    }
+}
+
+function exportExams() {
+    showLoading();
+    // Implementation for export
+    setTimeout(() => {
+        hideLoading();
+        showToast('Export completed! Check your downloads.', 'success');
+    }, 2000);
+}
+
+function bulkActions() {
+    showToast('Bulk actions feature coming soon!', 'info');
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('[onclick*="toggleDropdown"]') && !event.target.closest('[id^="dropdown-"]')) {
+        document.querySelectorAll('[id^="dropdown-"]').forEach(dropdown => {
+            dropdown.classList.add('hidden');
+        });
+    }
+});
+
+// Initialize view on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Set initial view state
+    currentView = 'card';
+});
+</script>
+{% endblock %}

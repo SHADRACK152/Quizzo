@@ -1,0 +1,455 @@
+{% extends "base.html" %}
+
+{% block title %}All Exam Results - QUIZZO{% endblock %}
+
+{% block body %}
+<!-- Modern Results Dashboard -->
+<div class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
+    
+    <!-- Top Navigation with 3D Glass Effect -->
+    <nav class="nav-3d border-b border-white/20 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-18">
+                <!-- Logo & Brand with 3D Effect -->
+                <div class="flex items-center space-x-4">
+                    <div class="icon-3d icon-primary">
+                        <i class="fas fa-chart-bar text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold gradient-text font-display">QUIZZO</h1>
+                        <p class="text-xs text-secondary-500">Results Portal</p>
+                    </div>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="{{ url_for('dashboard') }}" class="nav-link">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                    <a href="{{ url_for('create_exam') }}" class="nav-link">
+                        <i class="fas fa-plus-circle mr-2"></i>Create Exam
+                    </a>
+                    <a href="{{ url_for('manage_exams') }}" class="nav-link">
+                        <i class="fas fa-clipboard-list mr-2"></i>Manage Exams
+                    </a>
+                    <a href="{{ url_for('exam_results_list') }}" class="nav-link active">
+                        <i class="fas fa-chart-bar mr-2"></i>Results
+                    </a>
+                </div>
+                
+                <!-- User Menu -->
+                <div class="flex items-center space-x-4">
+                    <!-- Profile -->
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            <div class="w-10 h-10 bg-gradient-to-r from-primary-400 to-accent-400 rounded-full flex items-center justify-center">
+                                <span class="text-white font-semibold text-sm">{{ user.username[0].upper() }}</span>
+                            </div>
+                            <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white"></div>
+                        </div>
+                        <div class="hidden md:block">
+                            <p class="font-semibold text-secondary-900">{{ user.username }}</p>
+                            <p class="text-xs text-secondary-500">Lecturer</p>
+                        </div>
+                        
+                        <!-- Dropdown Menu -->
+                        <div class="relative">
+                            <button class="p-1 text-secondary-500 hover:text-primary-500" onclick="toggleUserMenu()">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div id="user-menu" class="hidden absolute right-0 top-8 w-48 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
+                                <div class="py-2">
+                                    <a href="{{ url_for('profile') }}" class="flex items-center px-4 py-2 text-secondary-700 hover:bg-primary-50 hover:text-primary-600">
+                                        <i class="fas fa-user mr-3"></i>Profile
+                                    </a>
+                                    <div class="border-t border-gray-100 my-2"></div>
+                                    <a href="{{ url_for('logout') }}" class="flex items-center px-4 py-2 text-danger-600 hover:bg-danger-50">
+                                        <i class="fas fa-sign-out-alt mr-3"></i>Sign Out
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Header -->
+        <div class="mb-8 animate-fade-in">
+            <div class="bg-gradient-to-r from-primary-500 to-accent-500 rounded-3xl p-8 text-white relative overflow-hidden">
+                <!-- Background Decorations -->
+                <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
+                <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h1 class="text-3xl md:text-4xl font-bold mb-2">
+                                📊 All Exam Results
+                            </h1>
+                            <p class="text-primary-100 text-lg mb-4">
+                                Comprehensive overview of all student submissions across your exams
+                            </p>
+                        </div>
+                        <div class="mt-6 md:mt-0">
+                            <a href="{{ url_for('manage_exams') }}" class="bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-3 text-white hover:bg-white/30 transition-all duration-200 font-medium">
+                                <i class="fas fa-cog mr-2"></i>Manage Exams
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% if results %}
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-slide-up">
+                <!-- Total Submissions with 3D Icon -->
+                <div class="modern-card bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200 hover-lift">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="icon-3d icon-primary">
+                            <i class="fas fa-file-alt text-white text-xl"></i>
+                        </div>
+                        <span class="text-3xl font-bold text-primary-700">{{ results|length }}</span>
+                    </div>
+                    <h3 class="font-bold text-primary-800 mb-2 text-lg">Total Submissions</h3>
+                    <p class="text-primary-600 font-medium">Across all exams</p>
+                </div>
+
+                <!-- Completed Submissions with 3D Icon -->
+                <div class="modern-card bg-gradient-to-br from-success-50 to-success-100 border-success-200 hover-lift">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="icon-3d icon-success">
+                            <i class="fas fa-check-circle text-white text-xl"></i>
+                        </div>
+                        <span class="text-3xl font-bold text-success-700">{{ (results | selectattr('session.status', 'equalto', 'completed') | list | length) }}</span>
+                    </div>
+                    <h3 class="font-bold text-success-800 mb-2 text-lg">Completed</h3>
+                    <p class="text-success-600 font-medium">Successfully finished</p>
+                </div>
+
+                <!-- Average Score with 3D Icon -->
+                <div class="modern-card bg-gradient-to-br from-accent-50 to-accent-100 border-accent-200 hover-lift">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="icon-3d icon-accent">
+                            <i class="fas fa-chart-line text-white text-xl"></i>
+                        </div>
+                        {% set completed_results = results | selectattr('session.status', 'equalto', 'completed') | list %}
+                        {% if completed_results %}
+                            {% set avg_score = (completed_results | sum(attribute='score_percentage') / completed_results|length) %}
+                            <span class="text-3xl font-bold text-accent-700">{{ avg_score|round(1) }}%</span>
+                        {% else %}
+                            <span class="text-3xl font-bold text-accent-700">0%</span>
+                        {% endif %}
+                    </div>
+                    <h3 class="font-bold text-accent-800 mb-2 text-lg">Average Score</h3>
+                    <p class="text-accent-600 font-medium">Overall performance</p>
+                </div>
+
+                <!-- Disqualified with 3D Icon -->
+                <div class="modern-card bg-gradient-to-br from-warning-50 to-warning-100 border-warning-200 hover-lift">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="icon-3d icon-warning">
+                            <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+                        </div>
+                        <span class="text-3xl font-bold text-warning-700">{{ (results | selectattr('session.status', 'equalto', 'disqualified') | list | length) }}</span>
+                    </div>
+                    <h3 class="font-bold text-warning-800 mb-2 text-lg">Disqualified</h3>
+                    <p class="text-warning-600 font-medium">Violations detected</p>
+                </div>
+            </div>
+
+            <!-- Results Table -->
+            <div class="modern-card animate-slide-up">
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 space-y-4 md:space-y-0">
+                    <h2 class="text-xl font-bold text-secondary-900 flex items-center">
+                        <i class="fas fa-table mr-3 text-primary-500"></i>
+                        Student Results
+                    </h2>
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                        <!-- Search Filter -->
+                        <div class="relative">
+                            <input type="text" placeholder="Search students..." id="searchInput"
+                                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent w-full sm:w-auto">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                        <!-- Filter Dropdown -->
+                        <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                            <option value="">All Statuses</option>
+                            <option value="completed">Completed</option>
+                            <option value="disqualified">Disqualified</option>
+                        </select>
+                        <!-- Export Button -->
+                        <button onclick="exportResults()" class="px-4 py-2 bg-accent-500 text-white rounded-xl hover:bg-accent-600 transition-all duration-200 flex items-center">
+                            <i class="fas fa-download mr-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full" id="resultsTable">
+                        <thead>
+                            <tr class="border-b border-gray-200 bg-gradient-to-r from-primary-50 to-accent-50">
+                                <th class="text-left py-4 px-6 font-semibold text-secondary-700">Student</th>
+                                <th class="text-left py-4 px-6 font-semibold text-secondary-700">Exam</th>
+                                <th class="text-left py-4 px-6 font-semibold text-secondary-700">Score</th>
+                                <th class="text-left py-4 px-6 font-semibold text-secondary-700">Status</th>
+                                <th class="text-left py-4 px-6 font-semibold text-secondary-700">Date</th>
+                                <th class="text-left py-4 px-6 font-semibold text-secondary-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for result in results %}
+                            <tr class="hover:bg-primary-25 transition-colors duration-200" data-status="{{ result.session.status }}" data-student="{{ result.student.username|lower }}">
+                                <td class="py-4 px-6">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-gradient-to-r from-primary-400 to-accent-400 rounded-full flex items-center justify-center mr-3">
+                                            <span class="text-white font-semibold text-sm">{{ result.student.username[0].upper() }}</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-secondary-900">{{ result.student.username }}</p>
+                                            <p class="text-sm text-secondary-500">{{ result.student.email }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <div>
+                                        <p class="font-medium text-secondary-900">{{ result.exam.title }}</p>
+                                        <p class="text-sm text-secondary-500">{{ result.total_questions }} questions</p>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <div class="flex items-center">
+                                        <span class="text-lg font-bold {% if result.score_percentage >= 80 %}text-success-600{% elif result.score_percentage >= 60 %}text-warning-600{% else %}text-danger-600{% endif %}">
+                                            {{ result.score_percentage|round(1) }}%
+                                        </span>
+                                        <div class="ml-3 w-20 bg-gray-200 rounded-full h-2">
+                                            <div class="h-2 rounded-full {% if result.score_percentage >= 80 %}bg-success-500{% elif result.score_percentage >= 60 %}bg-warning-500{% else %}bg-danger-500{% endif %}" 
+                                                 style="width: {{ result.score_percentage }}%"></div>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm text-secondary-500 mt-1">{{ result.correct_answers }}/{{ result.total_questions }} correct</p>
+                                </td>
+                                <td class="py-4 px-6">
+                                    {% if result.session.status == 'completed' %}
+                                        <span class="px-3 py-1 bg-success-100 text-success-700 rounded-full text-sm font-medium">
+                                            <i class="fas fa-check mr-1"></i>Completed
+                                        </span>
+                                    {% elif result.session.status == 'disqualified' %}
+                                        <span class="px-3 py-1 bg-danger-100 text-danger-700 rounded-full text-sm font-medium">
+                                            <i class="fas fa-times mr-1"></i>Disqualified
+                                        </span>
+                                    {% else %}
+                                        <span class="px-3 py-1 bg-warning-100 text-warning-700 rounded-full text-sm font-medium">
+                                            <i class="fas fa-clock mr-1"></i>{{ result.session.status|title }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-4 px-6">
+                                    <div>
+                                        <p class="text-secondary-900">{{ result.session.end_time.strftime('%b %d, %Y') if result.session.end_time else 'In Progress' }}</p>
+                                        <p class="text-sm text-secondary-500">{{ result.session.end_time.strftime('%I:%M %p') if result.session.end_time else '' }}</p>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <div class="flex items-center space-x-2">
+                                        <a href="{{ url_for('view_results', session_id=result.session.id) }}" 
+                                           class="premium-btn">
+                                            <i class="fas fa-eye mr-1"></i>View
+                                        </a>
+                                        {% if result.session.status == 'disqualified' %}
+                                        <button class="px-3 py-1 bg-danger-500 text-white rounded-lg hover:bg-danger-600 transition-colors text-sm">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i>Alerts
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Grade Distribution -->
+                {% set completed_results = results | selectattr('session.status', 'equalto', 'completed') | list %}
+                {% if completed_results %}
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <h3 class="text-lg font-semibold text-secondary-900 mb-4 flex items-center">
+                        <i class="fas fa-chart-pie mr-2 text-accent-500"></i>
+                        Grade Distribution
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {% set a_grades = completed_results | selectattr('score_percentage', 'ge', 90) | list | length %}
+                        {% set b_grades = completed_results | selectattr('score_percentage', 'ge', 80) | rejectattr('score_percentage', 'ge', 90) | list | length %}
+                        {% set c_grades = completed_results | selectattr('score_percentage', 'ge', 70) | rejectattr('score_percentage', 'ge', 80) | list | length %}
+                        {% set below_70 = completed_results | rejectattr('score_percentage', 'ge', 70) | list | length %}
+                        
+                        <div class="text-center p-4 bg-gradient-to-br from-success-50 to-success-100 rounded-xl border border-success-200">
+                            <div class="text-2xl font-bold text-success-600">{{ a_grades }}</div>
+                            <div class="text-success-800 font-medium">A (90-100%)</div>
+                        </div>
+                        <div class="text-center p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl border border-primary-200">
+                            <div class="text-2xl font-bold text-primary-600">{{ b_grades }}</div>
+                            <div class="text-primary-800 font-medium">B (80-89%)</div>
+                        </div>
+                        <div class="text-center p-4 bg-gradient-to-br from-warning-50 to-warning-100 rounded-xl border border-warning-200">
+                            <div class="text-2xl font-bold text-warning-600">{{ c_grades }}</div>
+                            <div class="text-warning-800 font-medium">C (70-79%)</div>
+                        </div>
+                        <div class="text-center p-4 bg-gradient-to-br from-danger-50 to-danger-100 rounded-xl border border-danger-200">
+                            <div class="text-2xl font-bold text-danger-600">{{ below_70 }}</div>
+                            <div class="text-danger-800 font-medium">Below 70%</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <!-- Empty State -->
+            <div class="modern-card text-center py-16 animate-fade-in">
+                <div class="text-6xl mb-6">📊</div>
+                <h3 class="text-2xl font-bold text-secondary-700 mb-3">No exam results yet</h3>
+                <p class="text-secondary-500 mb-8 max-w-md mx-auto">
+                    Results will appear here once students complete your exams. Check back later or encourage students to take your exams.
+                </p>
+                <a href="{{ url_for('manage_exams') }}" class="premium-btn">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Manage Exams
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Mobile Navigation Overlay -->
+    <div id="mobile-nav-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden lg:hidden">
+        <div class="fixed top-0 right-0 h-full w-64 bg-white shadow-xl transform translate-x-full transition-transform duration-300" id="mobile-nav">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-semibold text-secondary-900">Navigation</h3>
+                    <button onclick="toggleMobileNav()" class="p-2 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-times text-secondary-500"></i>
+                    </button>
+                </div>
+            </div>
+            <nav class="p-6 space-y-4">
+                <a href="{{ url_for('dashboard') }}" class="mobile-nav-link">
+                    <i class="fas fa-home mr-3"></i>Dashboard
+                </a>
+                <a href="{{ url_for('create_exam') }}" class="mobile-nav-link">
+                    <i class="fas fa-plus-circle mr-3"></i>Create Exam
+                </a>
+                <a href="{{ url_for('manage_exams') }}" class="mobile-nav-link">
+                    <i class="fas fa-clipboard-list mr-3"></i>Manage Exams
+                </a>
+                <a href="{{ url_for('exam_results_list') }}" class="mobile-nav-link active">
+                    <i class="fas fa-chart-bar mr-3"></i>Results
+                </a>
+                <div class="pt-4 border-t border-gray-200">
+                    <a href="{{ url_for('profile') }}" class="mobile-nav-link">
+                        <i class="fas fa-user mr-3"></i>Profile
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="mobile-nav-link text-danger-600">
+                        <i class="fas fa-sign-out-alt mr-3"></i>Sign Out
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <script>
+        // Toggle user dropdown menu
+        function toggleUserMenu() {
+            const menu = document.getElementById('user-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Toggle mobile navigation
+        function toggleMobileNav() {
+            const overlay = document.getElementById('mobile-nav-overlay');
+            const nav = document.getElementById('mobile-nav');
+            
+            if (overlay.classList.contains('hidden')) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => nav.classList.remove('translate-x-full'), 10);
+            } else {
+                nav.classList.add('translate-x-full');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+
+        // Search and filter functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const statusFilter = document.getElementById('statusFilter');
+            const table = document.getElementById('resultsTable');
+            const rows = table.querySelectorAll('tbody tr');
+
+            function filterResults() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const statusValue = statusFilter.value.toLowerCase();
+
+                rows.forEach(row => {
+                    const studentName = row.dataset.student;
+                    const status = row.dataset.status;
+                    
+                    const matchesSearch = studentName.includes(searchTerm);
+                    const matchesStatus = !statusValue || status === statusValue;
+                    
+                    if (matchesSearch && matchesStatus) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            searchInput.addEventListener('input', filterResults);
+            statusFilter.addEventListener('change', filterResults);
+        });
+
+        // Export results to CSV
+        function exportResults() {
+            const results = [
+                ['Student', 'Email', 'Exam', 'Status', 'Score %', 'Correct Answers', 'Total Questions', 'Completion Date']
+            ];
+            
+            {% for result in results %}
+            results.push([
+                '{{ result.student.username }}',
+                '{{ result.student.email }}',
+                '{{ result.exam.title }}',
+                '{{ result.session.status|title }}',
+                '{{ result.score_percentage|round(1) }}',
+                '{{ result.correct_answers }}',
+                '{{ result.total_questions }}',
+                '{{ result.session.end_time.strftime("%Y-%m-%d %H:%M:%S") if result.session.end_time else "In Progress" }}'
+            ]);
+            {% endfor %}
+            
+            let csvContent = "data:text/csv;charset=utf-8,";
+            results.forEach(function(rowArray) {
+                let row = rowArray.map(field => `"${field}"`).join(",");
+                csvContent += row + "\r\n";
+            });
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "exam_results_" + new Date().toISOString().split('T')[0] + ".csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const userMenu = document.getElementById('user-menu');
+            if (!event.target.closest('.relative') && !userMenu.classList.contains('hidden')) {
+                userMenu.classList.add('hidden');
+            }
+        });
+    </script>
+
+{% endblock %}

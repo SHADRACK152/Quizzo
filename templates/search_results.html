@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results - QUIZZO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f8f7f4',
+                            100: '#f0eddf',
+                            200: '#e1d9be',
+                            300: '#d0c096',
+                            400: '#bfa77a',
+                            500: '#a08660',
+                            600: '#8B5C2A',
+                            700: '#7a4f25',
+                            800: '#664023',
+                            900: '#553420',
+                        },
+                        accent: {
+                            50: '#fef7ee',
+                            100: '#fdedd6',
+                            200: '#fbd7ac',
+                            300: '#f8ba77',
+                            400: '#f49340',
+                            500: '#f1751a',
+                            600: '#e25d10',
+                            700: '#bb4710',
+                            800: '#953815',
+                            900: '#782f14',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-primary-50 to-primary-100 min-h-screen">
+    <!-- Premium Navigation Header -->
+    <nav class="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 shadow-2xl border-b-4 border-accent-400">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo Section -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-br from-accent-400 to-accent-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-graduation-cap text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-white tracking-wide">QUIZZO</h1>
+                    <span class="text-xs bg-accent-500 text-white px-3 py-1 rounded-full font-semibold shadow-lg">PREMIUM</span>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="flex items-center space-x-6">
+                    <a href="{{ url_for('dashboard') }}" class="nav-link text-white hover:text-accent-300 transition-all duration-300 flex items-center">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                    <div class="h-6 w-px bg-white/30"></div>
+                    <a href="{{ url_for('logout') }}" class="nav-link text-white hover:text-red-300 transition-all duration-300 flex items-center">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-primary-200">
+            <div class="flex items-center mb-8">
+                <div class="w-12 h-12 bg-gradient-to-br from-accent-400 to-accent-600 rounded-xl flex items-center justify-center mr-4">
+                    <i class="fas fa-search text-white text-xl"></i>
+                </div>
+                <h2 class="text-3xl font-bold bg-gradient-to-r from-primary-700 to-primary-900 bg-clip-text text-transparent">Search Results</h2>
+            </div>
+            
+            {% if query %}
+                <div class="mb-8 p-4 bg-gradient-to-r from-accent-50 to-accent-100 rounded-xl border-l-4 border-accent-400">
+                    <p class="text-primary-700 font-medium">
+                        <i class="fas fa-search mr-2 text-accent-500"></i>
+                        Search results for: <span class="font-bold text-accent-600">"{{ query }}"</span>
+                    </p>
+                </div>
+                
+                {% if results %}
+                    <div class="grid gap-6">
+                        {% for result in results %}
+                            <div class="group bg-gradient-to-r from-white to-primary-50/50 border border-primary-200 rounded-xl p-6 hover:shadow-2xl hover:border-accent-300 transition-all duration-300 transform hover:-translate-y-1">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex-1">
+                                        <div class="flex items-center mb-3">
+                                            <div class="w-8 h-8 bg-gradient-to-br from-accent-400 to-accent-600 rounded-lg flex items-center justify-center mr-3">
+                                                <i class="fas fa-file-alt text-white text-sm"></i>
+                                            </div>
+                                            <h3 class="text-xl font-bold text-primary-800 group-hover:text-accent-600 transition-colors">{{ result.title }}</h3>
+                                        </div>
+                                        
+                                        <div class="flex flex-wrap items-center gap-3 mb-3">
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300">
+                                                <i class="fas fa-tag mr-1"></i>{{ result.type|title }}
+                                            </span>
+                                            <span class="text-primary-600 font-medium">
+                                                <i class="fas fa-user-tie mr-1 text-accent-500"></i>{{ result.lecturer }}
+                                            </span>
+                                        </div>
+                                        
+                                        <p class="text-sm text-primary-500 flex items-center">
+                                            <i class="fas fa-calendar-alt mr-2 text-accent-400"></i>
+                                            Created: {{ result.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                        </p>
+                                    </div>
+                                    
+                                    {% if session.role == 'student' %}
+                                        <a href="{{ url_for('start_exam', exam_id=result.id) }}" 
+                                           class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+                                            <i class="fas fa-play mr-2"></i>Take Exam
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-8 p-4 bg-gradient-to-r from-primary-100 to-accent-100 rounded-xl border border-primary-200">
+                        <p class="text-primary-700 font-semibold text-center">
+                            <i class="fas fa-check-circle mr-2 text-green-500"></i>
+                            Found {{ results|length }} result(s)
+                        </p>
+                    </div>
+                {% else %}
+                    <div class="text-center py-16">
+                        <div class="w-24 h-24 bg-gradient-to-br from-primary-200 to-primary-300 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-search text-4xl text-primary-600"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-primary-800 mb-3">No Results Found</h3>
+                        <p class="text-primary-600 max-w-md mx-auto">
+                            We couldn't find any exams matching your search. Try using different keywords or check your spelling.
+                        </p>
+                        <div class="mt-6 p-4 bg-accent-50 rounded-xl border border-accent-200 max-w-md mx-auto">
+                            <p class="text-sm text-accent-700">
+                                <i class="fas fa-lightbulb mr-2"></i>
+                                <strong>Tip:</strong> Try searching by exam title, subject, or instructor name
+                            </p>
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-16">
+                    <div class="w-24 h-24 bg-gradient-to-br from-accent-200 to-accent-300 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-search text-4xl text-accent-600"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-primary-800 mb-3">Ready to Search</h3>
+                    <p class="text-primary-600 max-w-md mx-auto mb-6">
+                        Enter your search terms above to find exams, quizzes, and assessments.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
+                        <div class="p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl border border-primary-200">
+                            <i class="fas fa-file-alt text-2xl text-accent-500 mb-2"></i>
+                            <p class="text-sm text-primary-700 font-medium">Search by Title</p>
+                        </div>
+                        <div class="p-4 bg-gradient-to-br from-accent-50 to-accent-100 rounded-xl border border-accent-200">
+                            <i class="fas fa-user-tie text-2xl text-primary-500 mb-2"></i>
+                            <p class="text-sm text-accent-700 font-medium">Search by Instructor</p>
+                        </div>
+                        <div class="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
+                            <i class="fas fa-tag text-2xl text-green-500 mb-2"></i>
+                            <p class="text-sm text-green-700 font-medium">Search by Subject</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="mt-12 pt-8 border-t border-primary-200">
+                <a href="{{ url_for('dashboard') }}" 
+                   class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+                    <i class="fas fa-arrow-left mr-3"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

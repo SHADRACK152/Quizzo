@@ -1,0 +1,559 @@
+{% extends "base.html" %}
+
+{% block title %}Exam Results - QUIZZO{% endblock %}
+
+{% block body %}
+<!-- Modern Individual Results Dashboard -->
+<div class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
+    
+    <!-- Top Navigation -->
+    <nav class="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo & Brand -->
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 bg-gradient-to-r from-accent-500 to-primary-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-clipboard-check text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold gradient-text font-display">QUIZZO</h1>
+                        <p class="text-xs text-secondary-500">Exam Results</p>
+                    </div>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center space-x-6">
+                    {% if session.role == 'lecturer' %}
+                    <a href="{{ url_for('dashboard') }}" class="nav-link">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                    <a href="{{ url_for('create_exam') }}" class="nav-link">
+                        <i class="fas fa-plus-circle mr-2"></i>Create Exam
+                    </a>
+                    <a href="{{ url_for('manage_exams') }}" class="nav-link">
+                        <i class="fas fa-clipboard-list mr-2"></i>Manage Exams
+                    </a>
+                    <a href="{{ url_for('exam_results_list') }}" class="nav-link">
+                        <i class="fas fa-chart-bar mr-2"></i>All Results
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('dashboard') }}" class="nav-link">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                    <a href="{{ url_for('my_results') }}" class="nav-link active">
+                        <i class="fas fa-chart-bar mr-2"></i>My Results
+                    </a>
+                    {% endif %}
+                </div>
+                
+                <!-- User Menu -->
+                <div class="flex items-center space-x-4">
+                    <!-- Profile -->
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            <div class="w-10 h-10 bg-gradient-to-r from-primary-400 to-accent-400 rounded-full flex items-center justify-center">
+                                <span class="text-white font-semibold text-sm">{{ current_user.username[0].upper() }}</span>
+                            </div>
+                            <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white"></div>
+                        </div>
+                        <div class="hidden md:block">
+                            <p class="font-semibold text-secondary-900">{{ current_user.username }}</p>
+                            <p class="text-xs text-secondary-500">{{ current_user.role|title }}</p>
+                        </div>
+                        
+                        <!-- Dropdown Menu -->
+                        <div class="relative">
+                            <button class="p-1 text-secondary-500 hover:text-primary-500" onclick="toggleUserMenu()">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div id="user-menu" class="hidden absolute right-0 top-8 w-48 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
+                                <div class="py-2">
+                                    <a href="{{ url_for('profile') }}" class="flex items-center px-4 py-2 text-secondary-700 hover:bg-primary-50 hover:text-primary-600">
+                                        <i class="fas fa-user mr-3"></i>Profile
+                                    </a>
+                                    <div class="border-t border-gray-100 my-2"></div>
+                                    <a href="{{ url_for('logout') }}" class="flex items-center px-4 py-2 text-danger-600 hover:bg-danger-50">
+                                        <i class="fas fa-sign-out-alt mr-3"></i>Sign Out
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Header -->
+        <div class="mb-8 animate-fade-in">
+            <div class="bg-gradient-to-r from-primary-500 to-accent-500 rounded-3xl p-8 text-white relative overflow-hidden">
+                <!-- Background Decorations -->
+                <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
+                <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h1 class="text-3xl md:text-4xl font-bold mb-2">
+                                📊 {{ exam.title }}
+                            </h1>
+                            <p class="text-primary-100 text-lg mb-4">
+                                Results for {{ student.username }}
+                            </p>
+                            {% if exam_session.end_time %}
+                            <div class="flex items-center text-primary-100">
+                                <i class="fas fa-clock mr-2"></i>
+                                <span>Completed: {{ exam_session.end_time.strftime('%B %d, %Y at %I:%M %p') }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="mt-6 md:mt-0">
+                            <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-6 text-center">
+                                <div class="text-4xl font-bold mb-2">{{ score_percentage }}%</div>
+                                <div class="text-primary-100 font-medium">Final Score</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Score Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-slide-up">
+            <!-- Correct Answers -->
+            <div class="modern-card bg-gradient-to-br from-success-50 to-success-100 border-success-200 hover-lift">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-success-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-check-circle text-white text-lg"></i>
+                    </div>
+                    <span class="text-3xl font-bold text-success-700">{{ correct_answers }}</span>
+                </div>
+                <h3 class="font-semibold text-success-800 mb-1">Correct Answers</h3>
+                <p class="text-success-600 text-sm">Questions answered correctly</p>
+            </div>
+
+            <!-- Total Questions -->
+            <div class="modern-card bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200 hover-lift">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-list-ol text-white text-lg"></i>
+                    </div>
+                    <span class="text-3xl font-bold text-primary-700">{{ total_questions }}</span>
+                </div>
+                <h3 class="font-semibold text-primary-800 mb-1">Total Questions</h3>
+                <p class="text-primary-600 text-sm">Questions in the exam</p>
+            </div>
+
+            <!-- Status -->
+            <div class="modern-card bg-gradient-to-br from-{% if exam_session.status == 'completed' %}success{% else %}danger{% endif %}-50 to-{% if exam_session.status == 'completed' %}success{% else %}danger{% endif %}-100 border-{% if exam_session.status == 'completed' %}success{% else %}danger{% endif %}-200 hover-lift">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-{% if exam_session.status == 'completed' %}success{% else %}danger{% endif %}-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-{% if exam_session.status == 'completed' %}check{% else %}times{% endif %} text-white text-lg"></i>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-lg font-bold {% if exam_session.status == 'completed' %}text-success-700{% else %}text-danger-700{% endif %}">
+                            {% if exam_session.status == 'completed' %}
+                                ✅ Completed
+                            {% elif exam_session.status == 'disqualified' %}
+                                ❌ Disqualified
+                            {% else %}
+                                ⏳ {{ exam_session.status|title }}
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <h3 class="font-semibold {% if exam_session.status == 'completed' %}text-success-800{% else %}text-danger-800{% endif %} mb-1">Status</h3>
+                <p class="{% if exam_session.status == 'completed' %}text-success-600{% else %}text-danger-600{% endif %} text-sm">Exam completion status</p>
+            </div>
+        </div>
+                </div>
+                <div class="{% if exam_session.status == 'completed' %}bg-green-100{% else %}bg-red-100{% endif %} p-3 rounded-full">
+                    <svg class="w-8 h-8 {% if exam_session.status == 'completed' %}text-green-600{% else %}text-red-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {% if exam_session.status == 'completed' %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                        {% else %}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        {% endif %}
+                    </svg>
+                </div>
+            </div>
+        </div>
+                </div>
+
+                <!-- Question Details -->
+                {% if questions and answers %}
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <h3 class="text-xl font-bold text-[#8B5C2A] mb-6">📝 Question Review</h3>
+        
+        <div class="space-y-6" x-data="{ expandedQuestions: {} }">
+            {% for question in questions %}
+                {% set student_ans = answers.get(question.id, '') %}
+                {% if question.question_type == 'multiple_choice' %}
+                    {% set is_correct = student_ans.upper() == question.correct_option.upper() %}
+                {% else %}
+                    {% set is_correct = student_ans.strip().lower() == question.answer.strip().lower() %}
+                {% endif %}
+                
+                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                    <div class="p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                         @click="expandedQuestions[{{ loop.index }}] = !expandedQuestions[{{ loop.index }}]">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center
+                                    {% if is_correct %}bg-green-100 text-green-600{% else %}bg-red-100 text-red-600{% endif %}">
+                                    {% if is_correct %}
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    {% else %}
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    {% endif %}
+                                </div>
+                                
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Question {{ loop.index }}</h4>
+                                    <p class="text-gray-600 text-sm">
+                                        {% if question.question_type == 'multiple_choice' %}Multiple Choice{% else %}Essay Question{% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-4">
+                                <span class="px-3 py-1 rounded-full text-sm font-medium
+                                    {% if is_correct %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if is_correct %}Correct{% else %}Incorrect{% endif %}
+                                </span>
+                                <svg class="w-5 h-5 text-gray-400 transform transition-transform"
+                                     :class="expandedQuestions[{{ loop.index }}] ? 'rotate-180' : ''"
+                                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div x-show="expandedQuestions[{{ loop.index }}]" 
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform scale-95"
+                         x-transition:enter-end="opacity-100 transform scale-100"
+                         class="p-6 bg-white border-t border-gray-200">
+                        
+                        <h4 class="font-semibold text-gray-800 mb-3">{{ question.text }}</h4>
+                        
+                        {% if question.question_type == 'multiple_choice' %}
+                            <!-- Multiple Choice Question -->
+                            <div class="space-y-2 mb-4">
+                                {% for letter, option in [('A', question.option_a), ('B', question.option_b), ('C', question.option_c), ('D', question.option_d)] %}
+                                    {% if option %}
+                                    <div class="p-3 rounded-lg border
+                                        {% if letter == student_ans.upper() %}
+                                            {% if letter == question.correct_option.upper() %}
+                                                bg-green-100 border-green-300 text-green-800
+                                            {% else %}
+                                                bg-red-100 border-red-300 text-red-800
+                                            {% endif %}
+                                        {% elif letter == question.correct_option.upper() %}
+                                            bg-green-50 border-green-200 text-green-700
+                                        {% else %}
+                                            bg-gray-50 border-gray-200
+                                        {% endif %}">
+                                        <div class="flex items-center justify-between">
+                                            <span><strong>{{ letter }})</strong> {{ option }}</span>
+                                            <div class="flex space-x-2">
+                                                {% if letter == student_ans.upper() %}
+                                                    <span class="text-sm px-2 py-1 bg-blue-100 text-blue-800 rounded">Your Answer</span>
+                                                {% endif %}
+                                                {% if letter == question.correct_option.upper() %}
+                                                    <span class="text-sm px-2 py-1 bg-green-100 text-green-800 rounded">✓ Correct</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <!-- Essay Question -->
+                            <div class="space-y-4">
+                                <div>
+                                    <h5 class="font-semibold text-gray-800 mb-2">Your Answer:</h5>
+                                    <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                                        {% if student_ans %}
+                                            <p class="text-gray-700 whitespace-pre-wrap">{{ student_ans }}</p>
+                                        {% else %}
+                                            <p class="text-gray-500 italic">No answer provided</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <h5 class="font-semibold text-gray-800 mb-2">Expected Answer:</h5>
+                                    <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                        <p class="text-gray-700 whitespace-pre-wrap">{{ question.answer }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- AI-Powered Study Advice -->
+    {% if ai_advice and session.role == 'student' %}
+    <div class="bg-gradient-to-br from-primary-50 to-accent-50 rounded-xl shadow-lg p-6 mb-8 border border-primary-200">
+        <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl flex items-center justify-center mr-4">
+                <i class="fas fa-robot text-white text-lg"></i>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-primary-700">🤖 AI Study Advisor</h3>
+                <p class="text-primary-600">Personalized recommendations based on your performance</p>
+            </div>
+        </div>
+        
+        <!-- Overall Advice -->
+        <div class="bg-white rounded-lg p-4 mb-6 border border-primary-200">
+            <h4 class="font-semibold text-primary-700 mb-3 flex items-center">
+                <i class="fas fa-lightbulb text-accent-500 mr-2"></i>
+                Overall Assessment
+            </h4>
+            <p class="text-gray-700">{{ ai_advice.overall_advice }}</p>
+        </div>
+        
+        <!-- Study Tips -->
+        {% if ai_advice.study_tips %}
+        <div class="bg-white rounded-lg p-4 mb-6 border border-primary-200">
+            <h4 class="font-semibold text-primary-700 mb-3 flex items-center">
+                <i class="fas fa-graduation-cap text-accent-500 mr-2"></i>
+                Study Recommendations
+            </h4>
+            <ul class="space-y-2">
+                {% for tip in ai_advice.study_tips %}
+                <li class="flex items-start">
+                    <i class="fas fa-check-circle text-success-500 mr-2 mt-1 flex-shrink-0"></i>
+                    <span class="text-gray-700">{{ tip }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <!-- Question-Specific Advice -->
+        {% if ai_advice.question_advice and wrong_questions %}
+        <div class="bg-white rounded-lg p-4 border border-primary-200">
+            <h4 class="font-semibold text-primary-700 mb-3 flex items-center">
+                <i class="fas fa-search text-accent-500 mr-2"></i>
+                Specific Areas for Improvement
+            </h4>
+            <div class="space-y-3">
+                {% for i in range(wrong_questions|length) %}
+                    {% set question_num = (loop.index)|string %}
+                    {% if ai_advice.question_advice.get(question_num) %}
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <div class="flex items-start">
+                            <i class="fas fa-exclamation-triangle text-red-500 mr-2 mt-1 flex-shrink-0"></i>
+                            <div>
+                                <p class="font-medium text-red-800 mb-1">Question {{ loop.index }}</p>
+                                <p class="text-red-700 text-sm">{{ ai_advice.question_advice[question_num] }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="mt-4 text-center">
+            <p class="text-xs text-primary-500">
+                <i class="fas fa-info-circle mr-1"></i>
+                This advice is generated by AI to help improve your learning. Always consult your instructor for additional guidance.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
+        <!-- Performance Analysis -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h3 class="text-xl font-bold text-[#8B5C2A] mb-6">📊 Performance Analysis</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Score Breakdown -->
+                <div class="bg-gradient-to-br from-[#8B5C2A]/10 to-[#bfa77a]/20 rounded-lg p-6 border border-[#8B5C2A]/20">
+                    <h4 class="font-semibold text-[#8B5C2A] mb-3">📈 Score Breakdown</h4>
+                    <p class="text-gray-600 mb-4">
+                        You answered {{ correct_answers }} out of {{ total_questions }} questions correctly, 
+                        achieving a score of {{ score_percentage }}%.
+                    </p>
+                    <div class="space-y-2">
+                        {% if score_percentage >= 90 %}
+                            <p class="text-[#4CBB17] font-semibold">🏆 Outstanding performance!</p>
+                        {% elif score_percentage >= 80 %}
+                            <p class="text-[#4CBB17] font-semibold">✨ Excellent work!</p>
+                        {% elif score_percentage >= 70 %}
+                            <p class="text-[#8B5C2A] font-semibold">👍 Good job!</p>
+                        {% elif score_percentage >= 60 %}
+                            <p class="text-[#bfa77a] font-semibold">📚 Keep improving!</p>
+                        {% else %}
+                            <p class="text-red-600 font-semibold">💪 More practice needed!</p>
+                        {% endif %}
+                </div>
+            </div>
+            
+            <!-- Time Management -->
+            <div class="bg-gradient-to-br from-[#bfa77a]/20 to-[#8B5C2A]/10 rounded-lg p-6 border border-[#bfa77a]/30">
+                <h4 class="font-semibold text-[#8B5C2A] mb-3">⏱️ Time Management</h4>
+                {% if exam_session.end_time and exam_session.start_time %}
+                    {% set session_duration_minutes = ((exam_session.end_time - exam_session.start_time).total_seconds() / 60)|round(1) %}
+                    <p class="text-gray-600 mb-2">
+                        You completed the exam in <strong>{{ session_duration_minutes }} minutes</strong>.
+                    </p>
+                    <div class="space-y-2">
+                        {% if session_duration_minutes < (duration_minutes * 0.5) %}
+                            <p class="text-[#4CBB17] font-semibold">🚀 Very efficient time usage!</p>
+                        {% elif session_duration_minutes < (duration_minutes * 0.8) %}
+                            <p class="text-[#8B5C2A] font-semibold">⏰ Good time management!</p>
+                        {% else %}
+                            <p class="text-[#bfa77a] font-semibold">📖 Consider practicing under time constraints.</p>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-500">Time information not available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- AI-Powered Study Advice -->
+    {% if ai_advice and session.role == 'student' %}
+    <div class="bg-gradient-to-br from-primary-50 to-accent-50 rounded-xl shadow-lg p-6 mb-8 border border-primary-200">
+        <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl flex items-center justify-center mr-4">
+                <i class="fas fa-robot text-white text-lg"></i>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-primary-700">🤖 AI Study Advisor</h3>
+                <p class="text-primary-600">Personalized recommendations based on your performance</p>
+            </div>
+        </div>
+        
+        <!-- Overall Advice -->
+        <div class="bg-white rounded-lg p-4 mb-6 border border-primary-200">
+            <h4 class="font-semibold text-primary-700 mb-3 flex items-center">
+                <i class="fas fa-lightbulb text-accent-500 mr-2"></i>
+                Overall Assessment
+            </h4>
+            <p class="text-gray-700">{{ ai_advice.overall_advice }}</p>
+        </div>
+        
+        <!-- Study Tips -->
+        {% if ai_advice.study_tips %}
+        <div class="bg-white rounded-lg p-4 mb-6 border border-primary-200">
+            <h4 class="font-semibold text-primary-700 mb-3 flex items-center">
+                <i class="fas fa-graduation-cap text-accent-500 mr-2"></i>
+                Study Recommendations
+            </h4>
+            <ul class="space-y-2">
+                {% for tip in ai_advice.study_tips %}
+                <li class="flex items-start">
+                    <i class="fas fa-check-circle text-success-500 mr-2 mt-1 flex-shrink-0"></i>
+                    <span class="text-gray-700">{{ tip }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <!-- Question-Specific Advice -->
+        {% if ai_advice.question_advice and wrong_questions %}
+        <div class="bg-white rounded-lg p-4 border border-primary-200">
+            <h4 class="font-semibold text-primary-700 mb-3 flex items-center">
+                <i class="fas fa-search text-accent-500 mr-2"></i>
+                Specific Areas for Improvement
+            </h4>
+            <div class="space-y-3">
+                {% for i in range(wrong_questions|length) %}
+                    {% set question_num = (loop.index)|string %}
+                    {% if ai_advice.question_advice.get(question_num) %}
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <div class="flex items-start">
+                            <i class="fas fa-exclamation-triangle text-red-500 mr-2 mt-1 flex-shrink-0"></i>
+                            <div>
+                                <p class="font-medium text-red-800 mb-1">Question {{ loop.index }}</p>
+                                <p class="text-red-700 text-sm">{{ ai_advice.question_advice[question_num] }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="mt-4 text-center">
+            <p class="text-xs text-primary-500">
+                <i class="fas fa-info-circle mr-1"></i>
+                This advice is generated by AI to help improve your learning. Always consult your instructor for additional guidance.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
+                <!-- Monitoring Alerts (if any) -->
+                {% if alerts %}
+                <div class="bg-orange-50 border border-orange-200 rounded-xl p-6 mb-8">
+                    <h4 class="font-semibold text-[#8B5C2A] mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        ⚠️ Exam Monitoring Alerts
+                    </h4>
+                    <p class="text-gray-700 mb-3">The following activities were detected during your exam:</p>
+                    <div class="space-y-2">
+                        {% for alert in alerts %}
+                        <div class="bg-white border border-[#8B5C2A]/20 rounded-lg p-3 shadow-sm">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-semibold text-[#8B5C2A]">{{ alert.alert_type }}</p>
+                                    <p class="text-gray-600 text-sm">{{ alert.description }}</p>
+                                </div>
+                                <span class="text-[#bfa77a] text-sm font-medium">{{ alert.alert_time.strftime('%H:%M:%S') }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="flex justify-center space-x-4 mt-8">
+                        {% if session.role == 'student' %}
+                        <a href="{{ url_for('dashboard') }}" 
+                           class="px-6 py-3 bg-gradient-to-r from-[#8B5C2A] to-[#bfa77a] text-white rounded-lg hover:from-[#6d4322] hover:to-[#8B5C2A] transition-all duration-200 shadow-lg">
+                            🏠 Back to Dashboard
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('exam_results_list') }}" 
+                           class="px-6 py-3 bg-gradient-to-r from-[#8B5C2A] to-[#bfa77a] text-white rounded-lg hover:from-[#6d4322] hover:to-[#8B5C2A] transition-all duration-200 shadow-lg">
+                            ← Back to Results
+                        </a>
+                        {% endif %}
+                        <button onclick="window.print()" 
+                                class="px-6 py-3 bg-white text-[#8B5C2A] border-2 border-[#8B5C2A] rounded-lg hover:bg-[#8B5C2A] hover:text-white transition-all duration-200 shadow-lg">
+                            🖨️ Print Results
+                        </button>
+                    </div>
+
+                </main>
+            </div>
+        </div>
+
+{% endblock %}

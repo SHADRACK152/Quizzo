@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Course Generator - QUIZZO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{{ url_for('dashboard') }}" class="text-2xl font-bold text-blue-600">
+                        <i class="fas fa-graduation-cap mr-2"></i>QUIZZO
+                    </a>
+                    <span class="ml-4 text-gray-600">AI Course Generator</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('dashboard') }}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-home mr-1"></i>Dashboard
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="text-red-600 hover:text-red-700">
+                        <i class="fas fa-sign-out-alt mr-1"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-robot text-blue-600 mr-3"></i>AI Course Generator
+            </h1>
+            <p class="text-gray-600">Create comprehensive courses with AI assistance, just like GeeksforGeeks!</p>
+        </div>
+
+        <!-- Course Generation Form -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">
+                <i class="fas fa-magic text-purple-600 mr-2"></i>Generate New Course
+            </h2>
+            
+            <form id="courseGenerationForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Subject Area</label>
+                        <input type="text" id="subjectArea" placeholder="e.g., Python Programming, Data Science, Web Development" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Course Title</label>
+                        <input type="text" id="courseTitle" placeholder="e.g., Complete Python Programming Masterclass" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Difficulty Level</label>
+                        <select id="difficultyLevel" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate" selected>Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Generation Speed</label>
+                        <select id="generationSpeed" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="fast">Fast (Basic Content)</option>
+                            <option value="comprehensive" selected>Comprehensive (Detailed)</option>
+                            <option value="extensive">Extensive (Full Coverage)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Special Requirements (Optional)</label>
+                    <textarea id="specialRequirements" rows="3" placeholder="e.g., Include practical projects, Focus on industry applications, Add coding exercises..." 
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                </div>
+                
+                <button type="submit" id="generateBtn" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition duration-300 transform hover:scale-105">
+                    <i class="fas fa-cogs mr-2"></i>Generate Course with AI
+                </button>
+            </form>
+        </div>
+
+        <!-- Generation Progress -->
+        <div id="progressSection" class="bg-white rounded-lg shadow-lg p-6 mb-8 hidden">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-spinner fa-spin text-blue-600 mr-2"></i>Generating Your Course...
+            </h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Creating course outline...</span>
+                    <div id="progress1" class="w-4 h-4 rounded-full bg-gray-300"></div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Generating module content...</span>
+                    <div id="progress2" class="w-4 h-4 rounded-full bg-gray-300"></div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Creating challenging questions...</span>
+                    <div id="progress3" class="w-4 h-4 rounded-full bg-gray-300"></div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Finalizing course structure...</span>
+                    <div id="progress4" class="w-4 h-4 rounded-full bg-gray-300"></div>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="bg-gray-200 rounded-full h-2">
+                    <div id="progressBar" class="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Requests -->
+        {% if recent_requests %}
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-history text-green-600 mr-2"></i>Recent Generation Requests
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for request in recent_requests %}
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-300">
+                    <h4 class="font-semibold text-gray-900 mb-2">{{ request.course_title }}</h4>
+                    <p class="text-sm text-gray-600 mb-2">{{ request.subject_area }} - {{ request.difficulty_level.title() }}</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs px-2 py-1 rounded-full {% if request.generation_status == 'completed' %}bg-green-100 text-green-800{% elif request.generation_status == 'failed' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {{ request.generation_status.title() }}
+                        </span>
+                        {% if request.generation_status == 'completed' and request.generated_template_id %}
+                        <a href="{{ url_for('preview_ai_template', template_id=request.generated_template_id) }}" 
+                           class="text-blue-600 hover:text-blue-700 text-sm">
+                            <i class="fas fa-eye mr-1"></i>Preview
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Popular Templates -->
+        {% if popular_templates %}
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-star text-yellow-500 mr-2"></i>Popular Course Templates
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for template in popular_templates %}
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition duration-300">
+                    <h4 class="font-semibold text-gray-900 mb-2">{{ template.template_name }}</h4>
+                    <p class="text-sm text-gray-600 mb-3">{{ template.subject_area }} - {{ template.difficulty_level.title() }}</p>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center">
+                            <span class="text-yellow-500 mr-1">
+                                {% for i in range(5) %}
+                                    {% if i < template.rating %}
+                                        <i class="fas fa-star"></i>
+                                    {% else %}
+                                        <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                            <span class="text-sm text-gray-600">({{ template.usage_count }} uses)</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mb-3">{{ template.total_estimated_hours }} hours</p>
+                    <a href="{{ url_for('preview_ai_template', template_id=template.id) }}" 
+                       class="block w-full bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">
+                        <i class="fas fa-eye mr-2"></i>Preview & Use
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="text-center">
+                <div class="text-green-500 text-6xl mb-4">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Course Generated Successfully!</h3>
+                <p class="text-gray-600 mb-6">Your AI-generated course is ready for preview and customization.</p>
+                <div class="space-y-3">
+                    <button onclick="previewGenerated()" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300">
+                        <i class="fas fa-eye mr-2"></i>Preview Course
+                    </button>
+                    <button onclick="closeModal()" class="w-full bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition duration-300">
+                        Generate Another Course
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let generatedTemplateId = null;
+        let generatedCourseId = null;
+
+        document.getElementById('courseGenerationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                subject_area: document.getElementById('subjectArea').value,
+                course_title: document.getElementById('courseTitle').value,
+                difficulty_level: document.getElementById('difficultyLevel').value,
+                special_requirements: document.getElementById('specialRequirements').value
+            };
+
+            // Show progress section
+            document.getElementById('progressSection').classList.remove('hidden');
+            document.getElementById('generateBtn').disabled = true;
+            
+            // Simulate progress animation
+            animateProgress();
+
+            try {
+                const response = await fetch('/generate_ai_course', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    generatedTemplateId = result.template_id;
+                    generatedCourseId = result.course_id;
+                    
+                    // Update success modal with more details
+                    const modalContent = document.querySelector('#successModal .text-center');
+                    modalContent.innerHTML = `
+                        <div class="text-green-500 text-6xl mb-4">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Course Generated & Saved Successfully!</h3>
+                        <p class="text-gray-600 mb-2">Your AI-generated course has been created and is ready to use.</p>
+                        <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                            <div class="text-sm text-blue-800">
+                                <p><strong>📚 ${result.lessons_created} lessons</strong> created</p>
+                                <p><strong>⏱️ ${result.processing_time}s</strong> generation time</p>
+                                <p><strong>🎯 Course ID:</strong> ${result.course_id}</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <button onclick="viewGeneratedCourse()" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition duration-300">
+                                <i class="fas fa-eye mr-2"></i>View Course
+                            </button>
+                            <button onclick="previewTemplate()" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300">
+                                <i class="fas fa-cog mr-2"></i>View Template
+                            </button>
+                            <button onclick="closeModal()" class="w-full bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition duration-300">
+                                Generate Another Course
+                            </button>
+                        </div>
+                    `;
+                    
+                    document.getElementById('successModal').classList.remove('hidden');
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            } finally {
+                document.getElementById('progressSection').classList.add('hidden');
+                document.getElementById('generateBtn').disabled = false;
+                resetProgress();
+            }
+        });
+
+        function animateProgress() {
+            const steps = ['progress1', 'progress2', 'progress3', 'progress4'];
+            const progressBar = document.getElementById('progressBar');
+            let currentStep = 0;
+
+            const interval = setInterval(() => {
+                if (currentStep < steps.length) {
+                    document.getElementById(steps[currentStep]).classList.remove('bg-gray-300');
+                    document.getElementById(steps[currentStep]).classList.add('bg-green-500');
+                    progressBar.style.width = ((currentStep + 1) / steps.length) * 100 + '%';
+                    currentStep++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 1500);
+        }
+
+        function resetProgress() {
+            const steps = ['progress1', 'progress2', 'progress3', 'progress4'];
+            steps.forEach(step => {
+                document.getElementById(step).classList.remove('bg-green-500');
+                document.getElementById(step).classList.add('bg-gray-300');
+            });
+            document.getElementById('progressBar').style.width = '0%';
+        }
+
+        function previewGenerated() {
+            if (generatedTemplateId) {
+                window.location.href = `/preview_ai_template/${generatedTemplateId}`;
+            }
+        }
+        
+        function viewGeneratedCourse() {
+            if (generatedCourseId) {
+                window.location.href = `/course/${generatedCourseId}`;
+            }
+        }
+        
+        function previewTemplate() {
+            if (generatedTemplateId) {
+                window.location.href = `/preview_ai_template/${generatedTemplateId}`;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('successModal').classList.add('hidden');
+            document.getElementById('courseGenerationForm').reset();
+        }
+    </script>
+</body>
+</html>

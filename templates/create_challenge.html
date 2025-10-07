@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+
+{% block title %}Create Challenge - QUIZZO{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Create New Challenge</h1>
+            <p class="text-gray-600 mt-2">Design engaging challenges for your students</p>
+        </div>
+        <a href="{{ url_for('manage_challenges') }}" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Challenges
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Challenge Creation Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <form id="challengeForm" method="POST">
+                    <!-- Basic Information -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">Basic Information</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="title" class="block text-sm font-medium text-gray-700 mb-2">Challenge Title *</label>
+                                <input type="text" id="title" name="title" required 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       placeholder="e.g., Math Speed Challenge">
+                            </div>
+                            
+                            <div>
+                                <label for="challenge_type" class="block text-sm font-medium text-gray-700 mb-2">Challenge Type *</label>
+                                <select id="challenge_type" name="challenge_type" required 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="speed_quiz">Speed Quiz</option>
+                                    <option value="accuracy_challenge">Accuracy Challenge</option>
+                                    <option value="mixed">Mixed Challenge</option>
+                                    <option value="knowledge_test">Knowledge Test</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                            <textarea id="description" name="description" rows="3" 
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder="Describe what this challenge is about..."></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                            <div>
+                                <label for="time_limit_minutes" class="block text-sm font-medium text-gray-700 mb-2">Time Limit (minutes)</label>
+                                <input type="number" id="time_limit_minutes" name="time_limit_minutes" min="1" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       placeholder="Optional">
+                            </div>
+                            
+                            <div>
+                                <label for="max_attempts" class="block text-sm font-medium text-gray-700 mb-2">Max Attempts</label>
+                                <input type="number" id="max_attempts" name="max_attempts" min="1" value="3" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label for="passing_score" class="block text-sm font-medium text-gray-700 mb-2">Passing Score (%)</label>
+                                <input type="number" id="passing_score" name="passing_score" min="0" max="100" value="70" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question Generation Method -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">Question Generation</h2>
+                        
+                        <div class="flex space-x-4 mb-6">
+                            <label class="flex items-center">
+                                <input type="radio" name="generation_method" value="ai" checked 
+                                       class="mr-2" onchange="toggleGenerationMethod()">
+                                <span class="text-sm font-medium">AI Generated Questions</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="generation_method" value="manual" 
+                                       class="mr-2" onchange="toggleGenerationMethod()">
+                                <span class="text-sm font-medium">Manual Entry</span>
+                            </label>
+                        </div>
+
+                        <!-- AI Generation Section -->
+                        <div id="ai-generation" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="topic" class="block text-sm font-medium text-gray-700 mb-2">Topic *</label>
+                                    <input type="text" id="topic" name="topic" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                           placeholder="e.g., Algebra, World History, Biology">
+                                </div>
+                                
+                                <div>
+                                    <label for="difficulty" class="block text-sm font-medium text-gray-700 mb-2">Difficulty Level</label>
+                                    <select id="difficulty" name="difficulty" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="easy">Easy</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="hard">Hard</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="question_count" class="block text-sm font-medium text-gray-700 mb-2">Number of Questions</label>
+                                <input type="number" id="question_count" name="question_count" min="5" max="50" value="10" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <button type="button" onclick="generateAIQuestions()" 
+                                    class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition duration-200">
+                                <i class="fas fa-magic mr-2"></i>Generate Questions with AI
+                            </button>
+                        </div>
+
+                        <!-- Manual Entry Section -->
+                        <div id="manual-entry" class="hidden">
+                            <div id="questions-container">
+                                <!-- Questions will be added here dynamically -->
+                            </div>
+                            <button type="button" onclick="addQuestion()" 
+                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200 mt-4">
+                                <i class="fas fa-plus mr-2"></i>Add Question
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Questions Preview -->
+                    <div id="questions-preview" class="mb-8 hidden">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">Questions Preview</h2>
+                        <div id="generated-questions" class="space-y-4">
+                            <!-- Generated questions will appear here -->
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" onclick="saveDraft()" 
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
+                            Save as Draft
+                        </button>
+                        <button type="submit" name="action" value="create_challenge" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
+                            Create Challenge
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Help Sidebar -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Challenge Types</h3>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <strong class="text-blue-600">Speed Quiz:</strong>
+                        <p class="text-gray-600">Time-based challenges focusing on quick responses</p>
+                    </div>
+                    <div>
+                        <strong class="text-green-600">Accuracy Challenge:</strong>
+                        <p class="text-gray-600">Focus on correctness over speed</p>
+                    </div>
+                    <div>
+                        <strong class="text-purple-600">Mixed Challenge:</strong>
+                        <p class="text-gray-600">Combination of speed and accuracy</p>
+                    </div>
+                    <div>
+                        <strong class="text-gray-600">Knowledge Test:</strong>
+                        <p class="text-gray-600">Comprehensive assessment</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-blue-800 mb-4">AI Generation Tips</h3>
+                <ul class="text-sm text-blue-700 space-y-2">
+                    <li>• Be specific with topics (e.g., "Quadratic Equations" vs "Math")</li>
+                    <li>• Choose appropriate difficulty for your students</li>
+                    <li>• Start with 10-15 questions for most challenges</li>
+                    <li>• Review and edit generated questions before publishing</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let questionCount = 0;
+
+function toggleGenerationMethod() {
+    const aiGeneration = document.getElementById('ai-generation');
+    const manualEntry = document.getElementById('manual-entry');
+    const selectedMethod = document.querySelector('input[name="generation_method"]:checked').value;
+    
+    if (selectedMethod === 'ai') {
+        aiGeneration.style.display = 'block';
+        manualEntry.style.display = 'none';
+    } else {
+        aiGeneration.style.display = 'none';
+        manualEntry.style.display = 'block';
+        if (questionCount === 0) {
+            addQuestion(); // Add first question automatically
+        }
+    }
+}
+
+function addQuestion() {
+    questionCount++;
+    const container = document.getElementById('questions-container');
+    const questionDiv = document.createElement('div');
+    questionDiv.className = 'border border-gray-200 rounded-lg p-4 mb-4';
+    questionDiv.innerHTML = `
+        <div class="flex justify-between items-center mb-3">
+            <h4 class="font-medium text-gray-800">Question ${questionCount}</h4>
+            <button type="button" onclick="removeQuestion(this)" class="text-red-600 hover:text-red-800">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Question Text *</label>
+                <textarea name="questions[${questionCount}][text]" rows="2" required 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter your question here..."></textarea>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Option A *</label>
+                    <input type="text" name="questions[${questionCount}][option_a]" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Option B *</label>
+                    <input type="text" name="questions[${questionCount}][option_b]" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Option C *</label>
+                    <input type="text" name="questions[${questionCount}][option_c]" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Option D *</label>
+                    <input type="text" name="questions[${questionCount}][option_d]" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Correct Answer *</label>
+                <select name="questions[${questionCount}][correct_answer]" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="A">Option A</option>
+                    <option value="B">Option B</option>
+                    <option value="C">Option C</option>
+                    <option value="D">Option D</option>
+                </select>
+            </div>
+        </div>
+    `;
+    container.appendChild(questionDiv);
+}
+
+function removeQuestion(button) {
+    button.closest('.border').remove();
+}
+
+function generateAIQuestions() {
+    const topic = document.getElementById('topic').value.trim();
+    const difficulty = document.getElementById('difficulty').value;
+    const questionCount = document.getElementById('question_count').value;
+    const challengeType = document.getElementById('challenge_type').value;
+    
+    if (!topic) {
+        alert('Please enter a topic for AI question generation.');
+        return;
+    }
+    
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+    button.disabled = true;
+    
+    fetch('/generate_ai_challenge_questions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            topic: topic,
+            difficulty: difficulty,
+            question_count: parseInt(questionCount),
+            challenge_type: challengeType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayGeneratedQuestions(data.questions);
+        } else {
+            alert('Error generating questions: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while generating questions.');
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function displayGeneratedQuestions(questions) {
+    const preview = document.getElementById('questions-preview');
+    const container = document.getElementById('generated-questions');
+    
+    // Store questions globally for form submission
+    window.generatedQuestions = questions;
+    
+    container.innerHTML = '';
+    
+    // Clear any existing hidden inputs for generated questions
+    const existingInputs = document.querySelectorAll('input[name="generated_questions"]');
+    existingInputs.forEach(input => input.remove());
+    
+    questions.forEach((question, index) => {
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'border border-gray-200 rounded-lg p-4';
+        questionDiv.innerHTML = `
+            <h4 class="font-medium text-gray-800 mb-2">Question ${index + 1}</h4>
+            <p class="text-gray-700 mb-3">${question.text}</p>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                <div class="flex items-center">
+                    <span class="font-medium text-gray-600 mr-2">A:</span>
+                    <span>${question.option_a}</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="font-medium text-gray-600 mr-2">B:</span>
+                    <span>${question.option_b}</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="font-medium text-gray-600 mr-2">C:</span>
+                    <span>${question.option_c}</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="font-medium text-gray-600 mr-2">D:</span>
+                    <span>${question.option_d}</span>
+                </div>
+            </div>
+            <p class="text-sm text-green-600 mt-2">
+                <strong>Correct Answer: ${question.correct_answer}</strong>
+            </p>
+        `;
+        container.appendChild(questionDiv);
+        
+        // Add hidden input for this question to the form
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'generated_questions';
+        hiddenInput.value = JSON.stringify(question);
+        document.getElementById('challengeForm').appendChild(hiddenInput);
+    });
+    
+    preview.classList.remove('hidden');
+}
+
+// Handle form submission with AJAX
+document.getElementById('challengeForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // Prevent default form submission
+    
+    const formData = new FormData(this);
+    
+    // Add the action parameter for create_challenge
+    formData.append('action', 'create_challenge');
+    
+    const submitButton = document.querySelector('button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    
+    // Add generated questions to form data if they exist
+    const generatedQuestionInputs = document.querySelectorAll('input[name="generated_questions"]');
+    if (generatedQuestionInputs.length === 0 && window.generatedQuestions && window.generatedQuestions.length > 0) {
+        // If no hidden inputs but we have generated questions in memory, add them
+        window.generatedQuestions.forEach(question => {
+            formData.append('generated_questions', JSON.stringify(question));
+        });
+    }
+    
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating Challenge...';
+    submitButton.disabled = true;
+    
+    console.log('Form data being submitted:');
+    for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+    }
+    
+    fetch('/create_challenge', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Challenge created successfully!');
+            window.location.href = '/challenges'; // Redirect to manage challenges
+        } else {
+            alert('Error creating challenge: ' + (data.error || data.message));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating the challenge.');
+    })
+    .finally(() => {
+        submitButton.innerHTML = originalText;
+        submitButton.disabled = false;
+    });
+});
+
+function saveDraft() {
+    // Add draft saving functionality
+    const formData = new FormData(document.getElementById('challengeForm'));
+    formData.append('action', 'save_draft');
+    
+    fetch('/create_challenge', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Challenge saved as draft!');
+        } else {
+            alert('Error saving draft: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving the draft.');
+    });
+}
+</script>
+{% endblock %}
