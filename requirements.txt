@@ -13,7 +13,7 @@ requests==2.31.0
 python-dateutil==2.8.2
 
 # Database
-psycopg==3.2.3
+psycopg2==2.9.7
 SQLAlchemy==1.4.53
 
 # File Handling (for profile pics)
