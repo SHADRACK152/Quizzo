@@ -1,0 +1,34 @@
+# Render Blueprint for QUIZZO Educational Platform
+# This file configures automatic deployment on Render.com
+
+services:
+  - type: web
+    name: quizzo-app
+    runtime: python3
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    healthCheckPath: /health
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: false
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: quizzo-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false  # You'll set this manually in Render dashboard
+      - key: OPENROUTER_API_KEY  
+        sync: false  # Optional - set if you have it
+    autoDeploy: true
+
+databases:
+  - name: quizzo-db
+    databaseName: quizzo
+    user: quizzo_user
+    region: oregon

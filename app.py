@@ -16,10 +16,63 @@ import os
 import random
 import time
 import traceback
+from functools import wraps
+import sqlalchemy.exc
+
+# Database retry decorator for handling connection issues
+def database_retry(max_retries=3, delay=1):
+    """Decorator to retry database operations on connection failures"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except (sqlalchemy.exc.OperationalError, sqlalchemy.exc.DisconnectionError) as e:
+                    if attempt < max_retries - 1:
+                        print(f"Database connection error (attempt {attempt + 1}/{max_retries}): {e}")
+                        print(f"Retrying in {delay} seconds...")
+                        time.sleep(delay * (attempt + 1))  # Exponential backoff
+                        # Try to recreate the database connection
+                        try:
+                            db.session.remove()
+                            db.engine.dispose()
+                        except:
+                            pass
+                    else:
+                        print(f"Database operation failed after {max_retries} attempts")
+                        raise e
+                except Exception as e:
+                    # For non-connection errors, don't retry
+                    raise e
+            return None
+        return wrapper
+    return decorator
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')  # Use env var in production
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quizzo.db'
+
+# Database Configuration - Support both SQLite (local) and PostgreSQL (production)
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    # Production: Use PostgreSQL from environment variable (Neon, Heroku, etc.)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    # PostgreSQL connection pooling and stability settings for Neon
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_size': 10,                    # Number of connections to maintain
+        'pool_recycle': 3600,               # Recycle connections every hour
+        'pool_pre_ping': True,              # Verify connections before use
+        'max_overflow': 20,                 # Additional connections if needed
+        'pool_timeout': 30,                 # Timeout for getting connection
+        'connect_args': {
+            'connect_timeout': 10,          # Connection timeout
+            'application_name': 'quizzo',   # App name for monitoring
+        }
+    }
+else:
+    # Development: Use SQLite
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quizzo.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 UPLOAD_FOLDER = 'static/profile_pics'
@@ -27,6 +80,35 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 db = SQLAlchemy(app)
+
+# Database helper functions with retry logic
+@database_retry(max_retries=3, delay=1)
+def safe_db_query(query_func):
+    """Safely execute database queries with retry logic"""
+    try:
+        return query_func()
+    except Exception as e:
+        print(f"Database query error: {e}")
+        # Force session cleanup on error
+        try:
+            db.session.rollback()
+        except:
+            pass
+        raise e
+
+@database_retry(max_retries=3, delay=1)
+def safe_db_commit():
+    """Safely commit database changes with retry logic"""
+    try:
+        db.session.commit()
+        return True
+    except Exception as e:
+        print(f"Database commit error: {e}")
+        try:
+            db.session.rollback()
+        except:
+            pass
+        raise e
 
 # Free AI Services Configuration
 FREE_AI_SERVICES = {
@@ -2588,7 +2670,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)  # Email field
-    password = db.Column(db.String(120), nullable=False)
+    password = db.Column(db.String(255), nullable=False)  # Increased from 120 to 255 for scrypt hashes
     role = db.Column(db.String(20), nullable=False)  # 'student', 'lecturer', 'admin'
     profile_pic = db.Column(db.String(120), nullable=True)  # New field
 
@@ -3000,6 +3082,24 @@ class CourseGenerationRequest(db.Model):
 def index():
     return render_template('login.html')
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Render deployment"""
+    try:
+        # Test database connection
+        with app.app_context():
+            db.session.execute(db.text('SELECT 1'))
+        return {
+            'status': 'healthy',
+            'database': 'connected',
+            'version': '1.0.0'
+        }, 200
+    except Exception as e:
+        return {
+            'status': 'unhealthy',
+            'error': str(e)
+        }, 500
+
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -3038,13 +3138,15 @@ def signup():
                 return render_template('signup.html', error=error_msg)
             
             # Check if username already exists
-            if User.query.filter_by(username=username).first():
+            existing_user = safe_db_query(lambda: User.query.filter_by(username=username).first())
+            if existing_user:
                 error_msg = "Username already exists."
                 print(f"Validation error: {error_msg}")
                 return render_template('signup.html', error=error_msg)
             
             # Check if email already exists
-            if User.query.filter_by(email=email).first():
+            existing_email = safe_db_query(lambda: User.query.filter_by(email=email).first())
+            if existing_email:
                 error_msg = "Email already exists."
                 print(f"Validation error: {error_msg}")
                 return render_template('signup.html', error=error_msg)
@@ -3057,7 +3159,7 @@ def signup():
             user.password = hashed_pw
             user.role = role
             db.session.add(user)
-            db.session.commit()
+            safe_db_commit()
             
             print(f"User created successfully: {username}")
             # Add success message to session for display on login page
@@ -3076,19 +3178,23 @@ def signup():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Clear signup success message after form submission
-        session.pop('signup_success', None)
-        
-        username = request.form['username']
-        password = request.form['password']
-        user = User.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password, password):
-            session['user_id'] = user.id
-            session['role'] = user.role
-            session['username'] = user.username
-            return redirect(url_for('dashboard'))
-        else:
-            return render_template('login.html', error="Invalid credentials.")
+        try:
+            # Clear signup success message after form submission
+            session.pop('signup_success', None)
+            
+            username = request.form['username']
+            password = request.form['password']
+            user = safe_db_query(lambda: User.query.filter_by(username=username).first())
+            if user and check_password_hash(user.password, password):
+                session['user_id'] = user.id
+                session['role'] = user.role
+                session['username'] = user.username
+                return redirect(url_for('dashboard'))
+            else:
+                return render_template('login.html', error="Invalid credentials.")
+        except Exception as e:
+            print(f"Login error: {e}")
+            return render_template('login.html', error="Database connection issue. Please try again.")
     return render_template('login.html')
 
 
@@ -8513,7 +8619,11 @@ def get_class_leaderboard(teacher_id, limit=10):
     ).filter(
         Exam.lecturer_id == teacher_id,
         User.role == 'student'
-    ).group_by(User.id).order_by(
+    ).group_by(
+        User.id, StudentPoints.id, StudentPoints.student_id, StudentPoints.points, 
+        StudentPoints.level, StudentPoints.total_exams_taken, StudentPoints.perfect_scores, 
+        StudentPoints.streak_days, StudentPoints.last_activity
+    ).order_by(
         StudentPoints.points.desc()
     ).limit(limit).all()
     
@@ -9388,6 +9498,16 @@ def init_db():
         print("Database tables created successfully!")
 
 if __name__ == '__main__':
-    init_db()  # Initialize database on startup
+    # Initialize database on startup
+    init_db()
     update_database()  # Update schema if needed
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    
+    # Production vs Development settings
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
+    
+    print(f"Starting QUIZZO app on port {port}")
+    print(f"Debug mode: {debug_mode}")
+    print(f"Database: {'PostgreSQL' if os.environ.get('DATABASE_URL') else 'SQLite'}")
+    
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)

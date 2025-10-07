@@ -21,6 +21,12 @@ Pillow==10.0.1
 # Database Migration (Optional)
 Flask-Migrate==4.0.5
 
+# PostgreSQL Database Driver
+psycopg2-binary==2.9.7
+
+# Database Connection Pooling & Utils
+SQLAlchemy==2.0.21
+
 # Testing (Development)
 pytest==7.4.2
 pytest-flask==1.2.0
