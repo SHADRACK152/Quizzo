@@ -3,6 +3,7 @@
 {% block title %}Quizzo Bot - Your AI Assistant{% endblock %}
 
 {% block head %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
     .chat-container {
         height: calc(100vh - 120px);
@@ -13,11 +14,215 @@
         background: rgba(0, 0, 0, 0.3);
         backdrop-filter: blur(10px);
         border-right: 1px solid rgba(255, 255, 255, 0.2);
+        transition: transform 0.3s ease;
     }
     
     .chat-main {
         background: rgba(255, 255, 255, 0.15);
         backdrop-filter: blur(20px);
+    }
+    
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+        .chat-container {
+            height: calc(100vh - 60px);
+            flex-direction: column;
+        }
+        
+        .chat-sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            width: 85%;
+            max-width: 320px;
+            height: calc(100vh - 60px);
+            z-index: 50;
+            transform: translateX(-100%);
+            border-right: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .chat-sidebar.open {
+            transform: translateX(0);
+        }
+        
+        .mobile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+            display: none;
+        }
+        
+        .mobile-overlay.show {
+            display: block;
+        }
+        
+        .chat-main {
+            flex: 1;
+            width: 100%;
+        }
+        
+        .chat-header-mobile {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .mobile-menu-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .message-bubble {
+            max-width: 85%;
+        }
+        
+        .chat-input {
+            font-size: 16px; /* Prevents zoom on iOS */
+        }
+        
+        /* Hide desktop elements on mobile */
+        .desktop-only {
+            display: none;
+        }
+        
+        /* Mobile input area adjustments */
+        #messagesContainer {
+            padding: 1rem;
+        }
+        
+        /* Better touch targets */
+        .quick-actions button {
+            padding: 0.75rem;
+            font-size: 0.875rem;
+        }
+    }
+    
+    /* Landscape orientation adjustments */
+    @media (max-width: 768px) and (orientation: landscape) {
+        .chat-container {
+            height: calc(100vh - 50px);
+        }
+        
+        .chat-sidebar {
+            top: 50px;
+            height: calc(100vh - 50px);
+        }
+        
+        .chat-header-mobile {
+            padding: 0.5rem 1rem;
+        }
+        
+        #messagesContainer {
+            padding: 0.75rem;
+        }
+    }
+    
+    /* Desktop styles */
+    @media (min-width: 769px) {
+        .chat-header-mobile {
+            display: none;
+        }
+        
+        .mobile-only {
+            display: none;
+        }
+    }
+    
+    /* Touch-friendly interactions */
+    @media (hover: none) and (pointer: coarse) {
+        .session-item,
+        .quick-actions button,
+        button {
+            min-height: 44px; /* Apple's recommended touch target */
+            padding: 0.75rem 1rem;
+        }
+        
+        .message-bubble {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        /* Enhanced send button for mobile */
+        #sendButton {
+            min-width: 56px;
+            min-height: 56px;
+            padding: 1rem;
+            font-size: 1.2rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        #sendButton:hover,
+        #sendButton:active {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            transform: scale(1.05);
+        }
+        
+        #sendButton:disabled {
+            background: rgba(255, 255, 255, 0.2);
+            transform: none;
+        }
+    }
+    
+    /* Mobile send button styling */
+    @media (max-width: 768px) {
+        #sendButton {
+            min-width: 48px;
+            min-height: 48px;
+            padding: 0.75rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 3px 10px rgba(59, 130, 246, 0.4);
+            transition: all 0.2s ease;
+        }
+        
+        #sendButton:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.6);
+        }
+        
+        #sendButton i {
+            font-size: 1.1rem;
+        }
+        
+        /* Make input area more touch-friendly */
+        .chat-input {
+            min-height: 48px;
+            padding: 0.75rem 1rem;
+            border-radius: 24px;
+        }
+        
+        /* Improve input form layout on mobile */
+        #chatForm {
+            align-items: flex-end;
+            gap: 0.75rem;
+        }
+        
+        /* Send button states for better UX */
+        #sendButton:not(:disabled) {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4);
+        }
+        
+        #sendButton:not(:disabled):active {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
     }
     
     .message-bubble {
@@ -181,9 +386,23 @@
 {% endblock %}
 
 {% block content %}
+<!-- Mobile Overlay -->
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileSidebar()"></div>
+
 <div class="chat-container flex">
+    <!-- Mobile Header -->
+    <div class="chat-header-mobile mobile-only">
+        <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="text-white font-semibold">Quizzo Bot</h1>
+        <button class="mobile-menu-btn" onclick="createNewChat()">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+
     <!-- Sidebar -->
-    <div class="chat-sidebar w-80 p-6 overflow-y-auto">
+    <div class="chat-sidebar w-80 p-6 overflow-y-auto" id="chatSidebar">
         <!-- Header -->
         <div class="mb-6">
             <div class="flex items-center mb-4">
@@ -208,7 +427,7 @@
             <h3 class="text-black font-semibold mb-3">Recent Chats</h3>
             <div id="recentSessions" class="space-y-2">
                 {% for session in recent_sessions %}
-                <div class="session-item p-3 rounded-lg cursor-pointer" onclick="loadChatSession({{ session.id }})">
+                <div class="session-item p-3 rounded-lg cursor-pointer" onclick="window.innerWidth <= 768 ? loadChatSessionMobile({{ session.id }}) : loadChatSession({{ session.id }})">
                     <div class="text-black text-sm font-bold truncate">{{ session.session_title }}</div>
                     <div class="text-gray-700 text-xs mt-1 font-medium">
                         {{ session.message_count }} messages • {{ session.last_activity.strftime('%m/%d %H:%M') }}
@@ -259,7 +478,7 @@
     <!-- Main Chat Area -->
     <div class="chat-main flex-1 flex flex-col">
         <!-- Chat Header -->
-        <div class="bg-white/10 backdrop-blur-lg border-b border-white/20 p-4">
+        <div class="bg-white/10 backdrop-blur-lg border-b border-white/20 p-4 desktop-only">
             <div class="flex items-center justify-between">
                 <div>
                     <h2 id="chatTitle" class="text-white font-semibold">Quizzo Bot - Chat with {{ user_name }}</h2>
@@ -325,7 +544,8 @@
                 </div>
                 <button type="submit" 
                         id="sendButton"
-                        class="bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg transition-all duration-300 border border-white/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                        disabled
+                        class="bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg transition-all duration-300 border border-white/30 disabled:opacity-50 disabled:cursor-not-allowed opacity-50">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </form>
@@ -413,6 +633,22 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
+        }
+    });
+    
+    // Update send button state based on input content
+    document.getElementById('messageInput').addEventListener('input', function(e) {
+        const sendButton = document.getElementById('sendButton');
+        const hasContent = e.target.value.trim().length > 0;
+        
+        if (hasContent) {
+            sendButton.classList.remove('opacity-50');
+            sendButton.classList.add('opacity-100');
+            sendButton.disabled = false;
+        } else {
+            sendButton.classList.add('opacity-50');
+            sendButton.classList.remove('opacity-100');
+            sendButton.disabled = true;
         }
     });
     
@@ -529,14 +765,26 @@ async function sendMessage() {
     } finally {
         // Re-enable input
         messageInput.disabled = false;
-        document.getElementById('sendButton').disabled = false;
+        const sendButton = document.getElementById('sendButton');
+        sendButton.disabled = true; // Will be enabled by input event listener if there's content
+        sendButton.classList.add('opacity-50');
+        sendButton.classList.remove('opacity-100');
         messageInput.focus();
     }
 }
 
 // Quick question helper
 function askQuickQuestion(question) {
-    document.getElementById('messageInput').value = question;
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    
+    messageInput.value = question;
+    
+    // Enable send button since we have content
+    sendButton.disabled = false;
+    sendButton.classList.remove('opacity-50');
+    sendButton.classList.add('opacity-100');
+    
     sendMessage();
 }
 
@@ -879,6 +1127,64 @@ function showNotification(type, message, duration = 5000) {
 // Attach file (placeholder)
 function attachFile() {
     showNotification('info', 'File attachment feature coming soon!', 3000);
+}
+
+// Mobile responsive functions
+function toggleMobileSidebar() {
+    const sidebar = document.getElementById('chatSidebar');
+    const overlay = document.getElementById('mobileOverlay');
+    
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+}
+
+function closeMobileSidebar() {
+    const sidebar = document.getElementById('chatSidebar');
+    const overlay = document.getElementById('mobileOverlay');
+    
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+}
+
+// Close sidebar when clicking on a chat session (mobile)
+function loadChatSessionMobile(sessionId) {
+    loadChatSession(sessionId);
+    closeMobileSidebar();
+}
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    if (window.innerWidth > 768) {
+        closeMobileSidebar();
+    }
+});
+
+// Handle touch gestures for better mobile experience
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+});
+
+document.addEventListener('touchend', function(e) {
+    touchEndX = e.changedTouches[0].screenX;
+    handleGesture();
+});
+
+function handleGesture() {
+    const swipeThreshold = 50;
+    const swipeDistance = touchEndX - touchStartX;
+    
+    // Swipe right to open sidebar (from left edge)
+    if (swipeDistance > swipeThreshold && touchStartX < 50 && window.innerWidth <= 768) {
+        toggleMobileSidebar();
+    }
+    
+    // Swipe left to close sidebar
+    if (swipeDistance < -swipeThreshold && window.innerWidth <= 768) {
+        closeMobileSidebar();
+    }
 }
 </script>
 {% endblock %}
