@@ -9,6 +9,7 @@ import secrets
 import string
 from flask import Flask, render_template, redirect, url_for, request, session, jsonify, flash
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta, timezone
@@ -3088,7 +3089,7 @@ def health_check():
     try:
         # Test database connection
         with app.app_context():
-            db.session.execute(db.text('SELECT 1'))
+            db.session.execute(text('SELECT 1'))
         return {
             'status': 'healthy',
             'database': 'connected',
@@ -9447,35 +9448,35 @@ def update_database():
     with app.app_context():
         try:
             # Check if passing_score column exists
-            db.session.execute(db.text("SELECT passing_score FROM exam_settings LIMIT 1"))
+            db.session.execute(text("SELECT passing_score FROM exam_settings LIMIT 1"))
             
             # Check if scheduling columns exist in exam table
-            db.session.execute(db.text("SELECT scheduled_start FROM exam LIMIT 1"))
+            db.session.execute(text("SELECT scheduled_start FROM exam LIMIT 1"))
             print("Database schema is up to date!")
         except Exception as e:
             print(f"Updating database schema...")
             try:
                 # Add missing columns one by one
                 try:
-                    db.session.execute(db.text("ALTER TABLE exam_settings ADD COLUMN passing_score INTEGER DEFAULT 70"))
+                    db.session.execute(text("ALTER TABLE exam_settings ADD COLUMN passing_score INTEGER DEFAULT 70"))
                     print("Added passing_score column to exam_settings")
                 except:
                     pass
                 
                 try:
-                    db.session.execute(db.text("ALTER TABLE exam ADD COLUMN scheduled_start DATETIME"))
+                    db.session.execute(text("ALTER TABLE exam ADD COLUMN scheduled_start DATETIME"))
                     print("Added scheduled_start column to exam")
                 except:
                     pass
                     
                 try:
-                    db.session.execute(db.text("ALTER TABLE exam ADD COLUMN scheduled_end DATETIME"))
+                    db.session.execute(text("ALTER TABLE exam ADD COLUMN scheduled_end DATETIME"))
                     print("Added scheduled_end column to exam")
                 except:
                     pass
                     
                 try:
-                    db.session.execute(db.text("ALTER TABLE exam ADD COLUMN is_scheduled BOOLEAN DEFAULT 0"))
+                    db.session.execute(text("ALTER TABLE exam ADD COLUMN is_scheduled BOOLEAN DEFAULT 0"))
                     print("Added is_scheduled column to exam")
                 except:
                     pass
