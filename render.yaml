@@ -1,15 +1,19 @@
 # Render Blueprint for QUIZZO Educational Platform
-# This file configures automatic deployment on Render.com
+# This file configures automatic deployment on Render.com with mobile-responsive chatbot
 
 services:
   - type: web
     name: quizzo-app
     runtime: python3
+    plan: free  # Specify free plan explicitly
+    region: oregon  # Specify region for better performance
     buildCommand: |
       python -m pip install --upgrade pip
       pip install -r requirements.txt
     startCommand: python app.py
     healthCheckPath: /health
+    # Add environment for better mobile performance
+    env: python3
     envVars:
       - key: FLASK_ENV
         value: production
@@ -17,20 +21,35 @@ services:
         value: false
       - key: PORT
         value: 10000
+      # Mobile optimization headers
+      - key: MOBILE_OPTIMIZED
+        value: true
+      # Database connection
       - key: DATABASE_URL
         fromDatabase:
           name: quizzo-db
           property: connectionString
+      # Security
       - key: SECRET_KEY
         generateValue: true
+      # AI API Keys (set manually in Render dashboard)
       - key: GROQ_API_KEY
-        sync: false  # You'll set this manually in Render dashboard
+        sync: false  # Required for chatbot functionality
       - key: OPENROUTER_API_KEY  
-        sync: false  # Optional - set if you have it
+        sync: false  # Optional backup AI provider
+    # Deployment settings
     autoDeploy: true
+    # Health check configuration for better uptime
+    healthCheckPath: /health
+    healthCheckTimeout: 30
+    healthCheckRetries: 3
 
 databases:
   - name: quizzo-db
     databaseName: quizzo
     user: quizzo_user
     region: oregon
+    plan: free  # Free PostgreSQL database
+    
+# Additional configuration for mobile-responsive deployment
+# This ensures optimal performance for the mobile chatbot interface
